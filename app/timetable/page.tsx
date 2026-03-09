@@ -1,139 +1,171 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useTimetable } from '@/lib/TimeTableContext';
 import { exportToPDF } from '@/lib/exportToPDF';
-import { timetableDisplayData } from '@/lib/type';
+import { generateTT } from '@/lib/utils';
+import { getSlotViewPayload } from '@/lib/slot-view';
+import { fullCourseData, timetableDisplayData } from '@/lib/type';
 
-/* ── Slot → timetable grid mapping ── */
-const THEORY_SLOTS: Record<string, [number, number]> = {};
-const LAB_SLOTS: Record<string, [number, number]> = {};
+const getCookie = (name: string): string | null => {
+    if (typeof document === 'undefined') return null;
+    const nameEQ = name + '=';
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.indexOf(nameEQ) === 0) {
+            return decodeURIComponent(cookie.substring(nameEQ.length));
+        }
+    }
+    return null;
+};
 
-const theoryLabels = [
-    ['A1', 'F1', 'D1', 'TB1', 'TG1', 'S11', 'A2', 'F2', 'D2', 'TB2', 'TG2', 'S3', ''],
-    ['B1', 'G1', 'E1', 'TC1', 'TAA1', '', 'B2', 'G2', 'E2', 'TC2', 'TAA2', 'S1', ''],
-    ['C1', 'A1', 'F1', 'TD1', 'TBB1', '', 'C2', 'A2', 'F2', 'TD2', 'TBB2', 'S4', ''],
-    ['D1', 'B1', 'G1', 'TE1', 'TCC1', '', 'D2', 'B2', 'G2', 'TE2', 'TCC2', 'S2', ''],
-    ['E1', 'C1', 'TA1', 'TF1', 'TDD1', 'S15', 'E2', 'C2', 'TA2', 'TF2', 'TDD2', '', ''],
-];
-const labLabels = [
-    ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L31', 'L32', 'L33', 'L34', 'L35', 'L36', ''],
-    ['L7', 'L8', 'L9', 'L10', 'L11', 'L12', 'L37', 'L38', 'L39', 'L40', 'L41', 'L42', ''],
-    ['L13', 'L14', 'L15', 'L16', 'L17', 'L18', 'L43', 'L44', 'L45', 'L46', 'L47', 'L48', ''],
-    ['L19', 'L20', 'L21', 'L22', 'L23', 'L24', 'L49', 'L50', 'L51', 'L52', 'L53', 'L54', ''],
-    ['L25', 'L26', 'L27', 'L28', 'L29', 'L30', 'L55', 'L56', 'L57', 'L58', 'L59', 'L60', ''],
-];
+const SLOT_COLORS = ['#C8F7DC', '#E0D4F5', '#FFF3B0', '#FFD6E0', '#BDD7FF', '#B8F0E0'];
 
-theoryLabels.forEach((row, r) => row.forEach((s, c) => { if (s) THEORY_SLOTS[s] = [r, c]; }));
-labLabels.forEach((row, r) => row.forEach((s, c) => { if (s) LAB_SLOTS[s] = [r, c]; }));
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const THEORY_TIMES = [
-    '8:00am-8:50am', '8:55am-9:45am', '9:50am-10:40am', '10:45am-11:35am', '11:40am-12:30pm',
-    '12:30pm-1:20pm', '2:00pm-2:50pm', '2:55pm-3:45pm', '3:50pm-4:40pm', '4:45pm-5:35pm',
-    '5:40pm-6:30pm', '6:35pm-7:25pm', '',
-];
-const LAB_TIMES = THEORY_TIMES; // For now assuming same, UI shows Lab Hours row as well
-
-const SLOT_COLORS = [
-    '#C8F7DC', '#E0D4F5', '#FFF3B0', '#FFD6E0', '#BDD7FF', '#B8F0E0'
-];
-
-function getSlotColor(code: string, allCodes: string[]): string {
+function getSlotColor(code: string, allCodes: string[]) {
     const unique = [...new Set(allCodes)];
     const idx = unique.indexOf(code);
     return SLOT_COLORS[idx % SLOT_COLORS.length];
 }
 
 export default function TimetablePage() {
-    // --- MOCK DATA FOR TESTING ---
-    const MOCK_DATA: timetableDisplayData[][] = [
-        [
-            { courseCode: 'BPHY101L', courseName: 'Physics Theory', slotName: 'A1 + A1', facultyName: 'Dr. John Doe' },
-            { courseCode: 'BPHY101P', courseName: 'Physics Lab', slotName: 'L39 + L40', facultyName: 'Prof. Alice Smith' },
-            { courseCode: 'BCSE101L', courseName: 'C Programming', slotName: 'B1 + B1', facultyName: 'Dr. Bob Brown' },
-            { courseCode: 'BMAT101L', courseName: 'Calculus', slotName: 'C1 + C1', facultyName: 'Dr. Sarah Wilson' },
-            { courseCode: 'BENG101L', courseName: 'English', slotName: 'D1 + D1', facultyName: 'Prof. James Bond' },
-        ],
-        [
-            { courseCode: 'BCSE102L', courseName: 'Data Structures', slotName: 'A2 + A2', facultyName: 'Dr. Eve Adams' },
-            { courseCode: 'BCSE102P', courseName: 'DS Lab', slotName: 'L43 + L44', facultyName: 'Prof. Mike Ross' },
-        ]
-    ];
-
     const router = useRouter();
-    // Bypass real auth for testing
-    const session = { user: { name: 'Test User', email: 'test@example.com' } };
-    const status = 'authenticated'; 
-    const { timetableData: realData } = useTimetable();
-
-    // Use real data if available, otherwise use mock data
-    const timetableData = (realData && realData.length > 0) ? realData : MOCK_DATA;
+    const { data: session, status } = useSession();
+    const { timetableData, setTimetableData } = useTimetable();
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedSlot, setSelectedSlot] = useState<timetableDisplayData | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState('');
-    const gridRef = useRef<HTMLDivElement>(null);
+    const [clashMessage, setClashMessage] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const { scheduleRows, leftTimes, rightTimes } = useMemo(() => getSlotViewPayload(), []);
+
+    // Load from cookies and generate if context is empty
+    useEffect(() => {
+        if (!timetableData || timetableData.length === 0) {
+            const savedCoursesRaw = getCookie('preferenceCourses');
+            if (savedCoursesRaw) {
+                try {
+                    setIsGenerating(true);
+                    const savedCourses = JSON.parse(savedCoursesRaw) as fullCourseData[];
+                    const { result, clashes } = generateTT(savedCourses);
+                    setTimetableData(result);
+                    setClashMessage(clashes);
+                } catch (error) {
+                    console.error('Error generating timetable:', error);
+                } finally {
+                    setIsGenerating(false);
+                }
+            }
+        }
+    }, [timetableData, setTimetableData]);
 
     const currentTT = timetableData?.[currentIndex] || [];
     const allCodes = currentTT.map(s => s.courseCode);
-
-    // useEffect for redirect removed for testing
 
     const showToast = useCallback((msg: string) => {
         setToast(msg);
         setTimeout(() => setToast(''), 3000);
     }, []);
 
-    const handleSave = async () => {
+    const handleSave = async (isPublic = false) => {
+        if (!session?.user?.email || isSaving || currentTT.length === 0) return;
         setIsSaving(true);
-        setTimeout(() => {
-            showToast('TEST MODE: Timetable saved to console!');
-            console.log('Saved Timetable:', currentTT);
+        try {
+            const title = isPublic ? 'Shared Timetable' : (prompt('Enter a title for this timetable:', 'My Schedule') || 'Untitled');
+            const res = await axios.post('/api/save-timetable', {
+                title,
+                slots: currentTT.map(s => ({
+                    slot: s.slotName,
+                    courseCode: s.courseCode,
+                    courseName: s.courseName,
+                    facultyName: s.facultyName,
+                })),
+                owner: session.user.email,
+                isPublic,
+            });
+
+            if (res.data.success) {
+                if (!isPublic) showToast('Timetable saved successfully!');
+                return res.data.timetable;
+            }
+        } catch (error) {
+            console.error('Save error:', error);
+            showToast('Failed to save timetable.');
+        } finally {
             setIsSaving(false);
-        }, 800);
+        }
     };
 
     const handleDownload = async () => {
+        if (currentTT.length === 0) return;
         showToast('Preparing PDF...');
         await exportToPDF('timetable-grid', `timetable-option-${currentIndex + 1}.pdf`);
     };
 
     const handleShare = async () => {
-        const shareId = 'mock123';
-        const url = `${window.location.origin}/share/${shareId}`;
-        await navigator.clipboard.writeText(url);
-        showToast('TEST MODE: Mock share link copied!');
+        if (!session?.user?.email || currentTT.length === 0) return;
+        const saved = await handleSave(true);
+        if (saved?.shareId) {
+            const url = `${window.location.origin}/share/${saved.shareId}`;
+            await navigator.clipboard.writeText(url);
+            showToast('Share link copied to clipboard!');
+        }
     };
 
-    /* Build the grid display data */
-    type CellData = timetableDisplayData | null;
-    const theoryGrid: CellData[][] = Array.from({ length: 5 }, () => Array(13).fill(null));
-    const labGrid: CellData[][] = Array.from({ length: 5 }, () => Array(13).fill(null));
+    /* Build the grid display data for rendering */
+    const theoryGrid: (timetableDisplayData | null)[][] = Array.from({ length: 5 }, () => Array(13).fill(null));
+    const labGrid: (timetableDisplayData | null)[][] = Array.from({ length: 5 }, () => Array(13).fill(null));
 
     currentTT.forEach(s => {
-        const parts = s.slotName.split('+');
+        const parts = s.slotName.split(/\+|__/);
         parts.forEach(p => {
             const cleanP = p.trim();
-            if (THEORY_SLOTS[cleanP]) {
-                const [r, c] = THEORY_SLOTS[cleanP];
-                theoryGrid[r][c] = s;
-            }
-            if (LAB_SLOTS[cleanP]) {
-                const [r, c] = LAB_SLOTS[cleanP];
-                labGrid[r][c] = s;
-            }
+            // We need to find where this slot belongs in our 5x13 grid
+            scheduleRows.forEach((row, dayIdx) => {
+                row.theoryLeft.forEach((cell, colIdx) => { if (cell.key === cleanP) theoryGrid[dayIdx][colIdx] = s; });
+                row.theoryRight.forEach((cell, colIdx) => { if (cell.key === cleanP) theoryGrid[dayIdx][colIdx + 7] = s; });
+                row.labLeft.forEach((cell, colIdx) => { if (cell.key === cleanP) labGrid[dayIdx][colIdx] = s; });
+                row.labRight.forEach((cell, colIdx) => { if (cell.key === cleanP) labGrid[dayIdx][colIdx + 7] = s; });
+            });
         });
     });
 
-    if (status === 'loading') return null;
+    if (status === 'loading' || isGenerating) {
+        return (
+            <div className="min-h-screen bg-cream flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[16px] font-bold text-gray-700">Generating your timetables...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!timetableData || timetableData.length === 0) {
+        return (
+            <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-8">
+                <h1 className="text-3xl font-black text-black mb-4">No Timetables Found</h1>
+                <p className="text-gray-600 mb-8 max-w-md text-center">
+                    {clashMessage || "We couldn't generate any non-clashing combinations based on your selections."}
+                </p>
+                <button 
+                    onClick={() => router.push('/courses')}
+                    className="px-8 py-3 bg-[#A0C4FF] text-black font-bold rounded-xl shadow-lg hover:scale-105 transition-all"
+                >
+                    Back to Selection
+                </button>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-cream font-sans flex flex-col items-center pb-20 pt-12 px-6">
+        <div className="min-h-screen bg-cream font-sans flex flex-col items-center ">
             {/* Toast */}
             {toast && (
                 <div className="fixed top-8 right-8 z-[100] bg-[#1a1a2e] text-white px-8 py-4 rounded-2xl shadow-2xl text-[14px] font-bold animate-[slideIn_0.3s_ease] border border-white/10">
@@ -141,69 +173,94 @@ export default function TimetablePage() {
                 </div>
             )}
 
-            <div className="w-full max-w-[1440px]">
-                <h1 className="text-[42px] font-black text-black mb-10 tracking-tight">Timetables Generated</h1>
+            <div className="w-full p-8 ">
+                <h1 className="text-3xl font-bold text-black pb-4">Timetables Generated</h1>
 
-                {/* Main Content Area */}
-                <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] p-12 relative overflow-x-auto border border-gray-50" id="timetable-grid">
-                    <table className="w-full border-separate border-spacing-0">
+                {/* Main Table Container */}
+                <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-x-auto border border-gray-100" id="timetable-grid">
+                    <table className="w-full border-collapse bg-white rounded-xl overflow-hidden">
                         <thead>
-                            <tr>
-                                <th className="p-4 text-left text-[15px] font-black text-gray-400 uppercase tracking-widest border-b-2 border-gray-100 pb-6">Theory Hours</th>
-                                {THEORY_TIMES.map((t, i) => (
-                                    <th key={i} className={`p-4 text-center text-[12px] font-bold text-gray-400 border-b-2 border-gray-100 pb-6 ${i === 5 ? 'pr-12' : ''} ${i === 6 ? 'pl-12 border-l-2 border-gray-100' : ''}`}>
-                                        {t}
+                            <tr className="border-b border-gray-200">
+                                <th className="p-4 text-center text-sm font-bold text-black border-r border-gray-200 bg-white">Theory Hours</th>
+                                {[...leftTimes, { theory: '', lab: '' }, ...rightTimes].map((t, i) => (
+                                    <th key={i} className={` text-center text-xs font-bold text-black border-r border-gray-200 bg-white ${i === 6 ? 'w-[40px] px-0' : ''}`}>
+                                        {t.theory ? t.theory.split('-').map((part, idx, arr) => (
+                                            <span key={idx} className="block whitespace-nowrap">{part}{idx < arr.length - 1 ? '-' : ''}</span>
+                                        )) : null}
                                     </th>
                                 ))}
                             </tr>
-                            <tr>
-                                <th className="p-4 text-left text-[15px] font-black text-gray-400 uppercase tracking-widest border-b-2 border-gray-100 py-6">Lab Hours</th>
-                                {LAB_TIMES.map((t, i) => (
-                                    <th key={i} className={`p-4 text-center text-[12px] font-bold text-gray-400 border-b-2 border-gray-100 py-6 ${i === 5 ? 'pr-12' : ''} ${i === 6 ? 'pl-12 border-l-2 border-gray-100' : ''}`}>
-                                        {t}
+                            <tr className="border-b border-gray-200">
+                                <th className="p-4 text-center text-sm font-bold text-black border-r border-gray-200 bg-white">Lab Hours</th>
+                                {[...leftTimes, { theory: '', lab: '' }, ...rightTimes].map((t, i) => (
+                                    <th key={i} className={` text-center text-xs font-bold text-black border-r border-gray-200 bg-white ${i === 6 ? 'w-[40px] px-0' : ''}`}>
+                                        {t.lab ? t.lab.split('-').map((part, idx, arr) => (
+                                            <span key={idx} className="block whitespace-nowrap">{part}{idx < arr.length - 1 ? '-' : ''}</span>
+                                        )) : null}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {DAYS.map((day, rowIdx) => (
-                                <tr key={day} className="group">
-                                    <td className="p-6 text-[18px] font-black text-black align-middle w-[160px] border-b border-gray-50">{day}</td>
+                            {scheduleRows.map((row, rowIdx) => (
+                                <tr key={row.day} className="group border-b border-gray-200">
+                                    <td className="p-0 text-sm font-bold text-black text-center align-middle w-[8vw] border-r border-gray-200 bg-white">{row.day}</td>
                                     {Array.from({ length: 13 }).map((_, colIdx) => {
+                                        if (colIdx === 6) {
+                                             // Space for Lunch
+                                             const lunchLetters = ['L', 'U', 'N', 'C', 'H'];
+                                             return (
+                                                <td key="lunch-spacer" className="w-[4vw] border-r border-gray-200 align-middle bg-white">
+                                                    <div className="flex flex-col items-center justify-center">
+                                                        <span className="text-sm font-bold text-black opacity-80">
+                                                            {lunchLetters[rowIdx]}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                             )
+                                        }
+                                        const actualColIdx = colIdx > 6 ? colIdx - 1 : colIdx;
                                         const theoryCell = theoryGrid[rowIdx][colIdx];
                                         const labCell = labGrid[rowIdx][colIdx];
-                                        const theoryLabel = theoryLabels[rowIdx][colIdx];
-                                        const labLabel = labLabels[rowIdx][colIdx];
+                                        
+                                        // Get labels from scheduleRows
+                                        let theoryLabel = '';
+                                        let labLabel = '';
+                                        if (colIdx < 6) {
+                                            theoryLabel = row.theoryLeft[colIdx].label;
+                                            labLabel = row.labLeft[colIdx].label;
+                                        } else {
+                                            theoryLabel = row.theoryRight[colIdx-7].label;
+                                            labLabel = row.labRight[colIdx-7].label;
+                                        }
 
                                         return (
-                                            <td key={colIdx} className={`p-2 align-top border-b border-gray-50 ${colIdx === 5 ? 'pr-12' : ''} ${colIdx === 6 ? 'pl-12 border-l-2 border-gray-100' : ''}`}>
-                                                <div className="flex flex-col gap-2 min-h-[110px] py-2">
+                                            <td key={colIdx} className={`p-2 align-top border-r border-gray-200 bg-white`}>
+                                                <div className="flex flex-col gap-4 ">
                                                     {/* Theory Slot */}
                                                     <div
-                                                        className={`rounded-2xl p-3 min-h-[50px] flex flex-col items-center justify-center transition-all cursor-pointer border-2 ${theoryCell ? 'shadow-md hover:scale-[1.05] hover:shadow-lg z-10' : 'bg-transparent border-transparent'
+                                                        className={`rounded-lg  flex flex-col items-center justify-center transition-all cursor-pointer ${theoryCell ? 'shadow-sm z-10' : 'bg-transparent'
                                                             }`}
                                                         style={{
                                                             backgroundColor: theoryCell ? getSlotColor(theoryCell.courseCode, allCodes) : 'transparent',
-                                                            borderColor: theoryCell ? 'rgba(0,0,0,0.03)' : 'transparent'
                                                         }}
                                                         onClick={() => theoryCell && setSelectedSlot(theoryCell)}
                                                     >
-                                                        <span className={`text-[12px] font-black ${theoryCell ? 'text-black' : 'text-gray-200'}`}>{theoryLabel || ''}</span>
-                                                        {theoryCell && <span className="text-[10px] font-bold opacity-60 truncate max-w-full mt-0.5 uppercase">{theoryCell.courseCode}</span>}
+                                                        <span className={`text-xs font-bold ${theoryCell ? 'text-black' : 'text-gray-400'}`}>{theoryLabel}</span>
+                                                        {theoryCell && <span className="text-[10px] font-semibold opacity-80 uppercase mt-0.5 truncate max-w-[60px] text-black">{theoryCell.courseCode}</span>}
                                                     </div>
 
                                                     {/* Lab Slot */}
                                                     <div
-                                                        className={`rounded-2xl p-3 min-h-[50px] flex flex-col items-center justify-center transition-all cursor-pointer border-2 ${labCell ? 'shadow-md hover:scale-[1.05] hover:shadow-lg z-10' : 'bg-transparent border-transparent'
+                                                        className={`rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer ${labCell ? 'shadow-sm z-10' : 'bg-transparent'
                                                             }`}
                                                         style={{
                                                             backgroundColor: labCell ? getSlotColor(labCell.courseCode, allCodes) : 'transparent',
-                                                            borderColor: labCell ? 'rgba(0,0,0,0.03)' : 'transparent'
                                                         }}
                                                         onClick={() => labCell && setSelectedSlot(labCell)}
                                                     >
-                                                        <span className={`text-[12px] font-black ${labCell ? 'text-black' : 'text-gray-200'}`}>{labLabel || ''}</span>
-                                                        {labCell && <span className="text-[10px] font-bold opacity-60 truncate max-w-full mt-0.5 uppercase">{labCell.courseCode}</span>}
+                                                        <span className={`text-xs font-bold ${labCell ? 'text-black' : 'text-gray-400'}`}>{labLabel}</span>
+                                                        {labCell && <span className="text-[10px] font-semibold opacity-80 uppercase mt-0.5 truncate max-w-[60px] text-black">{labCell.courseCode}</span>}
                                                     </div>
                                                 </div>
                                             </td>
@@ -213,142 +270,163 @@ export default function TimetablePage() {
                             ))}
                         </tbody>
                     </table>
-
-                    {/* L U N C H spacer */}
-                    <div className="absolute top-0 bottom-0 left-[50.2%] -translate-x-[50%] flex flex-col items-center justify-center pointer-events-none">
-                        {'LUNCH'.split('').map((char, i) => (
-                            <span key={i} className="text-[14px] font-black text-gray-200 my-6 tracking-widest">{char}</span>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Controls & Pagination Area */}
-                <div className="flex flex-wrap items-center justify-between mt-12 gap-6 px-4">
-                    {/* Pagination buttons */}
-                    <div className="flex items-center gap-3 bg-white p-2 rounded-[24px] shadow-sm border border-gray-100">
-                        <button
+                
+                {/* Pagination & Action Controls */}
+                <div className="flex flex-wrap items-center justify-between p-4 mt-8 mb-4">
+                    {/* Pagination */}
+                    <div className="flex items-center gap-1 bg-[#8ab2f2] p-2 rounded-lg shadow-sm">
+                         <button
                             onClick={() => setCurrentIndex(0)}
-                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-50 text-black hover:bg-gray-100 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-black hover:bg-white/40 transition-colors font-bold"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" /></svg>
+                            «
                         </button>
-                        {[0, 1, 2, 3].map(idx => (
-                            <button
-                                key={idx}
-                                onClick={() => setCurrentIndex(idx)}
-                                className={`w-12 h-12 flex items-center justify-center rounded-2xl font-black text-[16px] transition-all ${currentIndex === idx
-                                    ? 'bg-[#3B5BDB] text-white shadow-xl scale-110'
-                                    : 'bg-transparent text-gray-400 hover:text-black hover:bg-gray-50'
-                                    }`}
-                            >
-                                {idx + 1}
-                            </button>
-                        ))}
+                        <div className="flex gap-1">
+                             {[0, 1, 2, 3].map(idx => (
+                                idx < (timetableData?.length || 0) && (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setCurrentIndex(idx)}
+                                        className={`w-8 h-8 flex items-center justify-center rounded-md font-bold text-sm transition-all ${currentIndex === idx
+                                            ? 'bg-white text-black shadow-sm'
+                                            : 'bg-transparent text-black hover:bg-white/40'
+                                            }`}
+                                    >
+                                        {idx + 1}
+                                    </button>
+                                )
+                            ))}
+                        </div>
                         <button
                             onClick={() => setCurrentIndex((timetableData?.length || 1) - 1)}
-                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-50 text-black hover:bg-gray-100 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-black hover:bg-white/40 transition-colors font-bold"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 17l5-5-5-5M6 17l5-5-5-5" /></svg>
+                            »
                         </button>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-4">
+                    {/* Action Bar */}
+                    <div className="display-absolute position-fixed mb-90 flex items-center gap-4">
                         <button
                             onClick={handleShare}
-                            className="flex items-center gap-3 bg-[#A0C4FF] hover:bg-[#8ab2f2] text-black font-black py-5 px-10 rounded-[22px] transition-all shadow-lg hover:shadow-xl active:scale-95"
+                            className="flex items-center gap-2 bg-[#A0C4FF] hover:bg-[#8ab2f2] text-black font-semibold py-2.5 px-6 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 text-sm"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
                             Share
                         </button>
                         <button
                             onClick={handleDownload}
-                            className="flex items-center gap-3 bg-[#C8F7DC] hover:bg-[#b0eac8] text-black font-black py-5 px-10 rounded-[22px] transition-all shadow-lg hover:shadow-xl active:scale-95"
+                            className="flex items-center gap-2 bg-[#C8F7DC] hover:bg-[#b0eac8] text-black font-semibold py-2.5 px-6 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 text-sm"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
                             Download
                         </button>
                         <button
-                            onClick={handleSave}
+                            onClick={() => handleSave()}
                             disabled={isSaving}
-                            className="flex items-center gap-3 bg-[#E0D4F5] hover:bg-[#d0c0f0] text-black font-black py-5 px-10 rounded-[22px] transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50"
+                            className="flex items-center gap-2 bg-[#f3e8ff] hover:bg-[#e9d5ff] text-black font-semibold py-2.5 px-6 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 text-sm"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
                             Save
                         </button>
                     </div>
-                </div>
+                </div></div>
+
+                
             </div>
 
-            {/* Step Navigation Bar */}
-            <div className="w-full max-w-[1440px] mt-16 bg-white/60 backdrop-blur-xl rounded-[40px] p-6 flex items-center justify-between border border-white/40 shadow-2xl shadow-black/5">
-                <div className="bg-white rounded-[24px] px-8 py-4 shadow-sm border border-gray-50 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-[20px]">👋</div>
-                    <span className="text-[18px] font-black text-black">{session?.user?.name || 'User'}</span>
+            {/* Footer Navigation - Matching Preferences Page Style */}
+            <div className="w-full absolute bottom-0 bg-white py-4 px-6 shadow-md flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3 bg-gray-100/50 py-2 px-4 rounded-xl">
+                    <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-sm overflow-hidden">
+                        {session?.user?.image ? (
+                            <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            "👤"
+                        )}
+                    </div>
+                    <span className="text-gray-700 text-sm font-semibold truncate max-w-[200px]">{session?.user?.name || 'Sravan Kowsik Gonuguntla'}</span>
                 </div>
 
-                <div className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-[28px] border border-gray-100">
-                    {[1, 2].map(num => (
-                        <button key={num} className="w-14 h-14 rounded-[22px] bg-white text-gray-400 font-black text-[18px] shadow-sm hover:text-black transition-colors">{num}</button>
+                <div className="flex items-center gap-3">
+                    {[1, 2, 3, 4].map(num => (
+                        <button 
+                            key={num} 
+                            onClick={() => {
+                                if (num === 1) router.push('/preferences');
+                                if (num === 2) router.push('/courses');
+                                if (num === 3) router.push('/timetable');
+                                if (num === 4) router.push('/saved');
+                            }}
+                            className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
+                                num === 3 
+                                    ? 'bg-[#A0C4FF] text-black' 
+                                    : 'bg-[#A0C4FF]/40 text-gray-700 hover:bg-[#A0C4FF]/60'
+                            }`}
+                        >
+                            {num === 3 ? '3. Timetable' : num}
+                        </button>
                     ))}
-                    <button className="h-14 px-10 rounded-[22px] bg-[#3B5BDB] text-white font-black text-[18px] shadow-xl shadow-blue-500/30">3. Timetable</button>
-                    <button className="w-14 h-14 rounded-[22px] bg-white text-gray-400 font-black text-[18px] shadow-sm hover:text-black transition-colors">4</button>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => router.push('/courses')}
-                        className="py-5 px-12 rounded-[22px] bg-white border-2 border-gray-100 text-gray-600 font-black text-[16px] hover:bg-gray-50 transition-all active:scale-95"
+                        className="px-8 py-2.5 bg-[#fef9c3] rounded-lg font-semibold text-sm hover:bg-[#fde047] text-black transition-all duration-200"
                     >
                         previous
                     </button>
                     <button
                         onClick={() => router.push('/saved')}
-                        className="py-5 px-14 rounded-[22px] bg-[#3B5BDB] text-white font-black text-[20px] shadow-2xl shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all"
+                        className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200"
                     >
                         next
                     </button>
                 </div>
             </div>
 
-            {/* Detail Popover Modal */}
+            {/* Popover */}
             {selectedSlot && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/10 backdrop-blur-[2px]" onClick={() => setSelectedSlot(null)}>
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-[4px]" onClick={() => setSelectedSlot(null)}>
                     <div
-                        className="bg-[#FFF3B0] rounded-[24px] shadow-2xl p-8 w-[90%] max-w-[400px] relative animate-[scaleIn_0.2s_ease]"
-                        style={{ backgroundColor: getSlotColor(selectedSlot.courseCode, allCodes) }}
+                        className="bg-white rounded-[40px] shadow-2xl p-12 w-[90%] max-w-[500px] relative animate-[scaleIn_0.2s_ease] border-4"
+                        style={{ borderColor: getSlotColor(selectedSlot.courseCode, allCodes) }}
                         onClick={e => e.stopPropagation()}
                     >
                         <button
                             onClick={() => setSelectedSlot(null)}
-                            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full transition-colors"
+                            className="absolute top-8 right-8 w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-black"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
                         </button>
 
-                        <h2 className="text-[22px] font-black text-black leading-tight mb-1">{selectedSlot.courseCode} - {selectedSlot.courseName}</h2>
-                        <p className="text-[14px] font-bold text-gray-800 mb-6">Slot: {selectedSlot.slotName}</p>
+                        <div className="mb-10">
+                            <span className="px-5 py-2 rounded-full text-[12px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest mb-4 inline-block">Course Details</span>
+                            <h2 className="text-[32px] font-black text-black leading-tight mt-2">{selectedSlot.courseCode}</h2>
+                            <p className="text-[18px] font-bold text-gray-600 mt-2">{selectedSlot.courseName}</p>
+                        </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Faculty Name:</p>
-                                <p className="text-[15px] font-bold text-black">{selectedSlot.facultyName}</p>
+                        <div className="space-y-8">
+                            <div className="flex gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">👨‍🏫</div>
+                                <div>
+                                    <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Faculty</p>
+                                    <p className="text-[18px] font-bold text-black">{selectedSlot.facultyName}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Course Name:</p>
-                                <p className="text-[15px] font-bold text-black">{selectedSlot.courseName}</p>
+                            <div className="flex gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">🕒</div>
+                                <div>
+                                    <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Slot</p>
+                                    <p className="text-[18px] font-bold text-black">{selectedSlot.slotName}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Course Code:</p>
-                                <p className="text-[15px] font-bold text-black">{selectedSlot.courseCode}</p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Timing:</p>
-                                <p className="text-[15px] font-bold text-black">-</p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Classroom:</p>
-                                <p className="text-[15px] font-bold text-black">-</p>
+                            <div className="flex gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">📍</div>
+                                <div>
+                                    <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Classroom</p>
+                                    <p className="text-[18px] font-bold text-black">Main Campus - TBD</p>
+                                </div>
                             </div>
                         </div>
                     </div>

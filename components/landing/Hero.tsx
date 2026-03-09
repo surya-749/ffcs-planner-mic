@@ -63,7 +63,7 @@ export default function Section1() {
 
                         {/* Subtitle */}
                         <p className=" text-center text-[20px] mb-12 absolute top-[110px]">
-                          Choose what you'd like to do next
+                          Choose what you&apos;d like to do next
                         </p>
 
                         {/* Options */}
