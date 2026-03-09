@@ -109,3 +109,26 @@ export const course_type_map: Record<string, string> = {
     BABIT102: 'E',
     BABIT103: 'E',
 };
+
+/**
+ * Map course type codes to fullCourseData courseType format
+ * E = Embedded (both theory and lab) = 'both'
+ * L = Lab only = 'lab'
+ * P = Project-based = 'both'
+ * Default (not in map) = 'th' (theory only)
+ */
+export function getCourseType(courseCode: string): 'th' | 'lab' | 'both' {
+    const prefix = courseCode.split(/\d+/)[0]; // Get alphabetic prefix
+    const typeCode = course_type_map[courseCode] || course_type_map[courseCode.replace(/[LP]$/, '')];
+    
+    if (typeCode === 'E') return 'both';
+    if (typeCode === 'L') return 'lab';
+    if (typeCode === 'P') return 'both';
+    
+    // Check if the course code ends with 'L' (lab) or 'P' (practice/project)
+    if (courseCode.endsWith('L') || courseCode.endsWith('P')) {
+        return 'lab';
+    }
+    
+    return 'th';
+}
