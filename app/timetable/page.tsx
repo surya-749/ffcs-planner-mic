@@ -23,6 +23,10 @@ const getCookie = (name: string): string | null => {
     return null;
 };
 
+const deleteCookie = (name: string) => {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+};
+
 const SLOT_COLORS = ['#C8F7DC', '#E0D4F5', '#FFF3B0', '#FFD6E0', '#BDD7FF', '#B8F0E0'];
 
 function getSlotColor(code: string, allCodes: string[]) {
@@ -42,6 +46,7 @@ export default function TimetablePage() {
     const [toast, setToast] = useState('');
     const [clashMessage, setClashMessage] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [editingTimetableTitle, setEditingTimetableTitle] = useState<string | null>(null);
 
     const { scheduleRows, leftTimes, rightTimes } = useMemo(() => getSlotViewPayload(), []);
 
@@ -51,6 +56,12 @@ export default function TimetablePage() {
     useEffect(() => {
         if (hasInitialized.current) return;
         hasInitialized.current = true;
+
+        // Check if we're editing an existing timetable
+        const editingTitle = getCookie('editingTimetableTitle');
+        if (editingTitle) {
+            setEditingTimetableTitle(editingTitle);
+        }
 
         if (!timetableData || timetableData.length === 0) {
             const savedCoursesRaw = getCookie('preferenceCourses');
@@ -83,22 +94,42 @@ export default function TimetablePage() {
         if (!session?.user?.email || isSaving || currentTT.length === 0) return;
         setIsSaving(true);
         try {
-            const title = isPublic ? 'Shared Timetable' : (prompt('Enter a title for this timetable:', 'My Schedule') || 'Untitled');
-            const res = await axios.post('/api/save-timetable', {
-                title,
-                slots: currentTT.map(s => ({
-                    slot: s.slotName,
-                    courseCode: s.courseCode,
-                    courseName: s.courseName,
-                    facultyName: s.facultyName,
-                })),
-                owner: session.user.email,
-                isPublic,
-            });
+            const editingTimetableId = getCookie('editingTimetableId');
+            const editingTimetableTitle = getCookie('editingTimetableTitle');
+            
+            const slotsData = currentTT.map(s => ({
+                slot: s.slotName,
+                courseCode: s.courseCode,
+                courseName: s.courseName,
+                facultyName: s.facultyName,
+            }));
 
-            if (res.data.success) {
-                if (!isPublic) showToast('Timetable saved successfully!');
-                return res.data.timetable;
+            if (editingTimetableId) {
+                // Update existing timetable
+                const res = await axios.patch(`/api/timetables/${editingTimetableId}`, {
+                    slots: slotsData,
+                    isPublic,
+                });
+
+                if (res.data.success) {
+                    // Keep editing cookies so user can continue to update the same timetable
+                    if (!isPublic) showToast('Timetable updated successfully!');
+                    return { _id: editingTimetableId, shareId: null };
+                }
+            } else {
+                // Create new timetable
+                const title = isPublic ? 'Shared Timetable' : (prompt('Enter a title for this timetable:', 'My Schedule') || 'Untitled');
+                const res = await axios.post('/api/save-timetable', {
+                    title,
+                    slots: slotsData,
+                    owner: session.user.email,
+                    isPublic,
+                });
+
+                if (res.data.success) {
+                    if (!isPublic) showToast('Timetable saved successfully!');
+                    return res.data.timetable;
+                }
             }
         } catch (error) {
             console.error('Save error:', error);
@@ -116,11 +147,26 @@ export default function TimetablePage() {
 
     const handleShare = async () => {
         if (!session?.user?.email || currentTT.length === 0) return;
-        const saved = await handleSave(true);
-        if (saved?.shareId) {
-            const url = `${window.location.origin}/share/${saved.shareId}`;
-            await navigator.clipboard.writeText(url);
-            showToast('Share link copied to clipboard!');
+        const editingTimetableId = getCookie('editingTimetableId');
+        
+        if (editingTimetableId) {
+            // Update existing timetable and get its shareId
+            await handleSave(true);
+            const timetableRes = await axios.get(`/api/timetables/${editingTimetableId}`);
+            const shareId = timetableRes.data.shareId;
+            if (shareId) {
+                const url = `${window.location.origin}/share/${shareId}`;
+                await navigator.clipboard.writeText(url);
+                showToast('Share link copied to clipboard!');
+            }
+        } else {
+            // Create new timetable
+            const saved = await handleSave(true);
+            if (saved?.shareId) {
+                const url = `${window.location.origin}/share/${saved.shareId}`;
+                await navigator.clipboard.writeText(url);
+                showToast('Share link copied to clipboard!');
+            }
         }
     };
 
@@ -161,7 +207,10 @@ export default function TimetablePage() {
                     {clashMessage || "We couldn't generate any non-clashing combinations based on your selections."}
                 </p>
                 <button
-                    onClick={() => router.push('/courses')}
+                    onClick={() => {
+                        // Keep editing state in case user wants to try again
+                        router.push('/courses');
+                    }}
                     className="px-8 py-3 bg-[#A0C4FF] text-black font-bold rounded-xl shadow-lg hover:scale-105 transition-all"
                 >
                     Back to Selection
@@ -180,7 +229,17 @@ export default function TimetablePage() {
             )}
 
             <div className="w-[95%] max-w-[1400px] bg-[#FFFBF0] rounded-[32px] p-8 my-8 pb-4 shadow-sm">
-                <h1 className="text-[26px] font-bold text-black pb-6 ml-2">Timetables Generated</h1>
+                <div className="flex items-center gap-4 pb-6 ml-2">
+                    <h1 className="text-[26px] font-bold text-black">Timetables Generated</h1>
+                    {editingTimetableTitle && (
+                        <div className="bg-blue-100 border-2 border-blue-400 rounded-lg px-4 py-2 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <span className="text-blue-800 font-semibold text-sm">Editing: {editingTimetableTitle}</span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Main Table Container */}
                 <div className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-x-auto border border-white" id="timetable-grid">
@@ -371,7 +430,10 @@ export default function TimetablePage() {
 
                     <div className="flex gap-3">
                         <button
-                            onClick={() => router.push('/courses')}
+                            onClick={() => {
+                                // Keep editing state when going back to make more changes
+                                router.push('/courses');
+                            }}
                             className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
                         >
                             previous
