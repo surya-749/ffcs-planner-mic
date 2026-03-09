@@ -48,6 +48,7 @@ export default function TimetablePage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [timetableTitle, setTimetableTitle] = useState('My Schedule');
+    const [editingTimetableTitle, setEditingTimetableTitle] = useState<string | null>(null);
 
     const { scheduleRows, leftTimes, rightTimes } = useMemo(() => getSlotViewPayload(), []);
 
@@ -97,12 +98,12 @@ export default function TimetablePage() {
             return null;
         }
         if (isSaving || currentTT.length === 0) return null;
-        
+
         setIsSaving(true);
         try {
             const editingTimetableId = getCookie('editingTimetableId');
             const editingTimetableTitle = getCookie('editingTimetableTitle');
-            
+
             const slotsData = currentTT.map(s => ({
                 slot: s.slotName,
                 courseCode: s.courseCode,
@@ -161,7 +162,7 @@ export default function TimetablePage() {
     const handleShare = async () => {
         if (!session?.user?.email || currentTT.length === 0) return;
         const editingTimetableId = getCookie('editingTimetableId');
-        
+
         if (editingTimetableId) {
             // Update existing timetable and get its shareId
             await handleSave(true);
@@ -240,9 +241,7 @@ export default function TimetablePage() {
                     {toast}
                 </div>
             )}
-            <div className='w-full max-w-[1400px] pt-4 px-6 mx-auto mb-2'>
-                <h1 className="text-[22px] font-bold text-black">Timetables Generated</h1>
-            </div>
+
 
             <div className="w-[95%] max-w-[1400px] bg-[#FFFBF0] rounded-[32px] p-8 my-8 pb-4 shadow-sm">
                 <div className="flex items-center gap-4 pb-6 ml-2">
@@ -364,7 +363,7 @@ export default function TimetablePage() {
                             ))}
                         </tbody>
                     </table>
-</div>
+                    </div>
                     {/* Pagination & Action Controls */}
                     <div className="flex flex-wrap items-center justify-between p-3 py-2 mt-4 mb-1">
                         {/* Pagination */}
@@ -463,7 +462,7 @@ export default function TimetablePage() {
                                 // Keep editing state when going back to make more changes
                                 router.push('/courses');
                             }}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
+                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition cursor-pointer"
                         >
                             Previous
                         </button>

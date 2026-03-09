@@ -39,6 +39,10 @@ const setCookie = (name: string, value: string, days = 30) => {
     document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`;
 };
 
+const deleteCookie = (name: string) => {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+};
+
 const getCookie = (name: string): string | null => {
     const nameEQ = name + '=';
     const cookies = document.cookie.split(';');
@@ -74,6 +78,7 @@ export default function PreferencesPage() {
     const [selectedFaculties, setSelectedFaculties] = useState<string[]>([]);
     const [facultyPriority, setFacultyPriority] = useState<'slot' | 'faculty'>('slot');
     const [isVisible, setIsVisible] = useState(false);
+    const [editingTimetableTitle, setEditingTimetableTitle] = useState<string | null>(null);
 
     // Load preferences from cookies on mount
     useEffect(() => {
@@ -97,6 +102,11 @@ export default function PreferencesPage() {
         if (savedSlots) setSelectedSlots(JSON.parse(savedSlots));
         if (savedFaculties) setSelectedFaculties(JSON.parse(savedFaculties));
         if (savedPriority) setFacultyPriority(savedPriority as 'slot' | 'faculty');
+
+        const editingTitle = getCookie('editingTimetableTitle');
+        if (editingTitle) {
+            setEditingTimetableTitle(editingTitle);
+        }
     }, []);
 
     // Save preferences to cookies whenever they change
@@ -383,7 +393,17 @@ export default function PreferencesPage() {
         <div className={`min-h-screen bg-[#F5E6D3] font-sans flex flex-col transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
             {/* Main Content */}
             <div className=" p-10">
-                <h1 className="text-4xl font-bold mb-20 text-black animate-lucid-fade-up">Select Your Preferences</h1>
+                <div className="flex items-center gap-4 mb-20">
+                    <h1 className="text-4xl font-bold text-black animate-lucid-fade-up">Select Your Preferences</h1>
+                    {editingTimetableTitle && (
+                        <div className="bg-blue-100 border-2 border-blue-400 rounded-lg px-4 py-2 flex items-center gap-2 animate-lucid-fade-up">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <span className="text-blue-800 font-semibold text-sm">Editing: {editingTimetableTitle}</span>
+                        </div>
+                    )}
+                </div>
 
                 <div className="flex gap-6 h-[600px]">
                     {/* Step Panels */}

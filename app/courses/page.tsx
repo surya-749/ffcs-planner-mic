@@ -106,7 +106,7 @@ const buildPreferenceCoursesFromRows = (rows: FacultyEntry[]): fullCourseData[] 
 const doSlotsClash = (slot1: string, slot2: string): boolean => {
     const slots1 = slot1.split('+').map(s => s.trim());
     const slots2 = slot2.split('+').map(s => s.trim());
-    
+
     for (const s1 of slots1) {
         for (const s2 of slots2) {
             if (s1 === s2) return true;
@@ -120,7 +120,7 @@ const doSlotsClash = (slot1: string, slot2: string): boolean => {
 // Find all clashing faculty UIDs
 const findClashes = (faculties: FacultyEntry[]): Set<string> => {
     const clashingUids = new Set<string>();
-    
+
     for (let i = 0; i < faculties.length; i++) {
         for (let j = i + 1; j < faculties.length; j++) {
             if (doSlotsClash(faculties[i].slot, faculties[j].slot)) {
@@ -129,7 +129,7 @@ const findClashes = (faculties: FacultyEntry[]): Set<string> => {
             }
         }
     }
-    
+
     return clashingUids;
 };
 
@@ -217,7 +217,7 @@ export default function CoursesPage() {
 
         const updatedCourses = buildPreferenceCoursesFromRows(faculties);
         setCookie('preferenceCourses', JSON.stringify(updatedCourses));
-        
+
         // Detect clashes
         setClashingUids(findClashes(faculties));
     }, [faculties, loaded]);
@@ -381,48 +381,48 @@ export default function CoursesPage() {
                                     faculties.map((faculty, index) => {
                                         const hasClash = clashingUids.has(faculty.uid);
                                         return (
-                                        <tr
-                                            key={faculty.uid}
-                                            className={`border-b border-gray-200 transition-colors duration-200 animate-lucid-row ${rowEffects[faculty.uid] || ''} ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'pointer-events-none' : ''} ${hasClash ? 'bg-red-100 hover:bg-red-200' : 'hover:bg-gray-50'}`}
-                                        >
-                                            <td className={`px-6 py-4 font-semibold text-center ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.no}</td>
-                                            <td className={`px-6 py-4 font-mono font-bold text-sm ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.courseCode}</td>
-                                            <td className={`px-6 py-4 ${hasClash ? 'text-red-700' : 'text-black'}`}>
-                                                <div className="text-sm whitespace-pre-wrap">{faculty.courseName}</div>
-                                            </td>
-                                            <td className={`px-6 py-4 ${hasClash ? 'text-red-700' : 'text-black'}`}>
-                                                <div className="text-sm whitespace-pre-wrap font-semibold">{faculty.slot}</div>
-                                            </td>
-                                            <td className={`px-6 py-4 font-semibold ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.facultyName}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => handleMoveUp(index)}
-                                                        disabled={index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
-                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
-                                                        title="Move up"
-                                                    >
-                                                        ↑
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleMoveDown(index)}
-                                                        disabled={index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
-                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
-                                                        title="Move down"
-                                                    >
-                                                        ↓
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRemove(index)}
-                                                        disabled={rowEffects[faculty.uid] === 'animate-dust-out'}
-                                                        className={`px-3 py-2 rounded text-lg font-bold text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 cursor-pointer ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
-                                                        title="Remove"
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                            <tr
+                                                key={faculty.uid}
+                                                className={`border-b border-gray-200 transition-colors duration-200 animate-lucid-row ${rowEffects[faculty.uid] || ''} ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'pointer-events-none' : ''} ${hasClash ? 'bg-red-100 hover:bg-red-200' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <td className={`px-6 py-4 font-semibold text-center ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.no}</td>
+                                                <td className={`px-6 py-4 font-mono font-bold text-sm ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.courseCode}</td>
+                                                <td className={`px-6 py-4 ${hasClash ? 'text-red-700' : 'text-black'}`}>
+                                                    <div className="text-sm whitespace-pre-wrap">{faculty.courseName}</div>
+                                                </td>
+                                                <td className={`px-6 py-4 ${hasClash ? 'text-red-700' : 'text-black'}`}>
+                                                    <div className="text-sm whitespace-pre-wrap font-semibold">{faculty.slot}</div>
+                                                </td>
+                                                <td className={`px-6 py-4 font-semibold ${hasClash ? 'text-red-700' : 'text-black'}`}>{faculty.facultyName}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => handleMoveUp(index)}
+                                                            disabled={index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
+                                                            className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
+                                                            title="Move up"
+                                                        >
+                                                            ↑
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMoveDown(index)}
+                                                            disabled={index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
+                                                            className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
+                                                            title="Move down"
+                                                        >
+                                                            ↓
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemove(index)}
+                                                            disabled={rowEffects[faculty.uid] === 'animate-dust-out'}
+                                                            className={`px-3 py-2 rounded text-lg font-bold text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 cursor-pointer ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                                                            title="Remove"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         );
                                     })
                                 ) : (
@@ -506,7 +506,7 @@ export default function CoursesPage() {
                                 deleteCookie('editingTimetableTitle');
                                 router.push('/preferences');
                             }}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
+                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition cursor-pointer"
                         >
                             Previous
                         </button>
