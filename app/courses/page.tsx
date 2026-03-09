@@ -399,7 +399,7 @@ export default function CoursesPage() {
                                                     <button
                                                         onClick={() => handleMoveUp(index)}
                                                         disabled={index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
-                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5'}`}
+                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
                                                         title="Move up"
                                                     >
                                                         ↑
@@ -407,7 +407,7 @@ export default function CoursesPage() {
                                                     <button
                                                         onClick={() => handleMoveDown(index)}
                                                         disabled={index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
-                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5'}`}
+                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5 cursor-pointer'}`}
                                                         title="Move down"
                                                     >
                                                         ↓
@@ -415,7 +415,7 @@ export default function CoursesPage() {
                                                     <button
                                                         onClick={() => handleRemove(index)}
                                                         disabled={rowEffects[faculty.uid] === 'animate-dust-out'}
-                                                        className={`px-3 py-2 rounded text-lg font-bold text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                                                        className={`px-3 py-2 rounded text-lg font-bold text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 cursor-pointer ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
                                                         title="Remove"
                                                     >
                                                         🗑️
@@ -461,7 +461,7 @@ export default function CoursesPage() {
                             <button
                                 onClick={handleRemoveAll}
                                 disabled={faculties.length === 0}
-                                className={`text-red-500 hover:text-red-700 font-semibold text-sm transition ${faculties.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                className={`text-red-500 hover:text-red-700 font-semibold text-sm transition cursor-pointer ${faculties.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
                             >
                                 Remove all
                             </button>
@@ -491,7 +491,7 @@ export default function CoursesPage() {
                                     if (num === 3) router.push('/timetable');
                                     if (num === 4) router.push('/saved');
                                 }}
-                                className={`px-5 py-2 rounded-lg font-semibold text-sm ${num === 2 ? 'bg-[#A0C4FF] text-black' : 'bg-[#A0C4FF]/40 text-gray-700'}`}
+                                className={`px-5 py-2 rounded-lg font-semibold text-sm cursor-pointer ${num === 2 ? 'bg-[#A0C4FF] text-black' : 'bg-[#A0C4FF]/40 text-gray-700'}`}
                             >
                                 {num === 2 ? '2. Faculty Preferences' : num}
                             </button>
@@ -508,13 +508,13 @@ export default function CoursesPage() {
                             }}
                             className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
                         >
-                            previous
+                            Previous
                         </button>
                         <button
                             onClick={() => router.push('/timetable')}
-                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition"
+                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition cursor-pointer"
                         >
-                            next
+                            Next
                         </button>
                     </div>
                 </div>
