@@ -383,7 +383,7 @@ export default function PreferencesPage() {
         <div className={`min-h-screen bg-[#F5E6D3] font-sans flex flex-col transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
             {/* Main Content */}
             <div className=" p-10">
-                <h1 className="text-4xl font-bold mb-12 text-black animate-lucid-fade-up">Select Your Preferences</h1>
+                <h1 className="text-4xl font-bold mb-20 text-black animate-lucid-fade-up">Select Your Preferences</h1>
 
                 <div className="flex gap-6 h-[600px]">
                     {/* Step Panels */}
@@ -397,7 +397,7 @@ export default function PreferencesPage() {
                         >
                             {stepNum === currentStep ? (
                                 <div key={`active-step-${currentStep}`} className="w-full h-full p-8 flex flex-col animate-lucid-panel-in">
-                                    <h2 className="text-2xl font-bold mb-6 text-black">
+                                    <h2 className="text-2xl font-bold mb-10 text-black">
                                         {stepNum}. {STEP_LABELS[stepNum - 1]}
                                     </h2>
 
@@ -409,7 +409,7 @@ export default function PreferencesPage() {
                                                     <button
                                                         key={dept}
                                                         onClick={() => handleDepartmentSelect(dept)}
-                                                        className={`w-full p-4 rounded-lg text-left font-semibold transition-all duration-200 hover:-translate-y-0.5 ${selectedDepartments.includes(dept)
+                                                        className={`w-full p-4 rounded-lg text-left font-semibold transition-all duration-200 cursor-pointer hover:-translate-y-0.5 ${selectedDepartments.includes(dept)
                                                             ? 'bg-white ring-2 ring-blue-500 shadow-md'
                                                             : 'bg-white/80 hover:bg-white hover:shadow-sm'
                                                             }`}
@@ -427,7 +427,7 @@ export default function PreferencesPage() {
                                                     <button
                                                         key={domain}
                                                         onClick={() => handleDomainSelect(domain)}
-                                                        className={`w-full p-4 rounded-lg text-left font-semibold transition-all duration-200 hover:-translate-y-0.5 ${selectedDomains.includes(domain)
+                                                        className={`w-full p-4 rounded-lg text-left font-semibold transition-all duration-200 cursor-pointer hover:-translate-y-0.5 ${selectedDomains.includes(domain)
                                                             ? 'bg-white ring-2 ring-blue-500 shadow-md'
                                                             : 'bg-white/80 hover:bg-white hover:shadow-sm'
                                                             }`}
@@ -550,11 +550,11 @@ export default function PreferencesPage() {
                                     </div>
 
                                     {/* Navigation arrows within active panel */}
-                                    <div className="flex justify-between mt-4 gap-2">
+                                    <div className="flex justify-between mt-24 gap-2">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handlePrevious(); }}
                                             disabled={currentStep === 1}
-                                            className={`px-4 py-2 rounded-lg bg-white font-bold text-xl ${currentStep === 1
+                                            className={`px-4 py-2 rounded-lg bg-white font-bold text-xl cursor-pointer ${currentStep === 1
                                                 ? 'opacity-40 cursor-not-allowed'
                                                 : 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200'
                                                 }`}
@@ -566,7 +566,7 @@ export default function PreferencesPage() {
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleAddAnotherProfessor(); }}
                                                     title={'Reset to Step 5 and add another professor'}
-                                                    className="flex-1 px-3 py-2 rounded-lg font-bold text-sm bg-[#FFF7ED] text-[#EA580C] hover:bg-[#FFEDD5] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 border border-[#FDBA74]"
+                                                    className="flex-1 px-3 py-2 rounded-lg font-bold text-sm bg-[#FFF7ED] text-[#EA580C] hover:bg-[#FFEDD5] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 border border-[#FDBA74] cursor-pointer"
                                                 >
                                                     + Add another
                                                 </button>
@@ -577,7 +577,7 @@ export default function PreferencesPage() {
                                                         router.push('/courses');
                                                     }}
                                                     title={'Save current preference and view all courses'}
-                                                    className="flex-1 px-4 py-2 rounded-lg font-bold text-sm bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                                                    className="flex-1 px-4 py-2 rounded-lg font-bold text-sm bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
                                                 >
                                                     Save & Continue →
                                                 </button>
@@ -586,7 +586,7 @@ export default function PreferencesPage() {
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
                                                 disabled={!canProceed()}
-                                                className={`px-4 py-2 rounded-lg bg-white font-bold text-xl ${!canProceed()
+                                                className={`px-4 py-2 rounded-lg bg-white font-bold text-xl cursor-pointer ${!canProceed()
                                                     ? 'opacity-40 cursor-not-allowed'
                                                     : 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200'
                                                     }`}
@@ -638,7 +638,7 @@ export default function PreferencesPage() {
                                     if (num === 3) router.push('/timetable');
                                     if (num === 4) router.push('/saved');
                                 }}
-                                className={`px-5 py-2 rounded-lg font-semibold text-sm ${num === 1
+                                className={`px-5 py-2 rounded-lg font-semibold text-sm cursor-pointer ${num === 1
                                     ? 'bg-[#A0C4FF] text-black'
                                     : 'bg-[#A0C4FF]/40 text-gray-700'
                                     }`}
@@ -654,18 +654,18 @@ export default function PreferencesPage() {
                                 saveCurrentSelection();
                                 router.push('/');
                             }}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition-all duration-200 hover:-translate-y-0.5"
+                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
                         >
-                            previous
+                            Previous
                         </button>
                         <button
                             onClick={() => {
                                 saveCurrentSelection();
                                 router.push('/courses');
                             }}
-                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200 hover:-translate-y-0.5"
+                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
                         >
-                            next
+                            Next
                         </button>
                     </div>
                 </div>

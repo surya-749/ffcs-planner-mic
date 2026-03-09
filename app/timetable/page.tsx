@@ -180,7 +180,7 @@ export default function TimetablePage() {
             )}
 
             <div className="w-[95%] max-w-[1400px] bg-[#FFFBF0] rounded-[32px] p-8 my-8 pb-4 shadow-sm">
-                <h1 className="text-[26px] font-bold text-black pb-6 ml-2">Timetables Generated</h1>
+                <h1 className="text-[26px] font-bold text-black pb-12 ml-2">Timetable Generated</h1>
 
                 {/* Main Table Container */}
                 <div className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-x-auto border border-white" id="timetable-grid">
@@ -248,7 +248,7 @@ export default function TimetablePage() {
                                                         className={`rounded-lg  flex flex-col items-center justify-center transition-all cursor-pointer ${theoryCell ? 'shadow-sm z-10' : 'bg-transparent'
                                                             }`}
                                                         style={{
-                                                            backgroundColor: theoryCell ? getSlotColor(theoryCell.courseCode, allCodes) : 'transparent',
+                                                            backgroundColor: theoryCell ? '#C8F7DC' : 'transparent',
                                                         }}
                                                         onClick={() => theoryCell && setSelectedSlot(theoryCell)}
                                                     >
@@ -261,7 +261,7 @@ export default function TimetablePage() {
                                                         className={`rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer ${labCell ? 'shadow-sm z-10' : 'bg-transparent'
                                                             }`}
                                                         style={{
-                                                            backgroundColor: labCell ? getSlotColor(labCell.courseCode, allCodes) : 'transparent',
+                                                            backgroundColor: labCell ? '#FFD6E0' : 'transparent',
                                                         }}
                                                         onClick={() => labCell && setSelectedSlot(labCell)}
                                                     >
@@ -362,7 +362,7 @@ export default function TimetablePage() {
                                     if (num === 3) router.push('/timetable');
                                     if (num === 4) router.push('/saved');
                                 }}
-                                className={`px-5 py-2 rounded-lg font-semibold text-sm ${num === 3 ? 'bg-[#A0C4FF] text-black' : 'bg-[#A0C4FF]/40 text-gray-700'}`}
+                                className={`px-5 py-2 rounded-lg font-semibold text-sm cursor-pointer ${num === 3 ? 'bg-[#A0C4FF] text-black' : 'bg-[#A0C4FF]/40 text-gray-700'}`}
                             >
                                 {num === 3 ? '3. Timetable' : num}
                             </button>
@@ -372,15 +372,15 @@ export default function TimetablePage() {
                     <div className="flex gap-3">
                         <button
                             onClick={() => router.push('/courses')}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
+                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition cursor-pointer"
                         >
-                            previous
+                            Previous
                         </button>
                         <button
                             onClick={() => router.push('/saved')}
-                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200"
+                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200 cursor-pointer"
                         >
-                            next
+                            Next
                         </button>
                     </div>
                 </div>
