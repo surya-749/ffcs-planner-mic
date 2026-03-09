@@ -1,59 +1,539 @@
 'use client';
 
-/**
- * COURSES PAGE — Step 2 in timetable creation flow
- *
- * Flow: Landing → Login → Create New → Preferences → **Courses** → Timetable → Saved
- *
- * PURPOSE:
- * Displays the user's selected courses in a table format and allows modifications:
- *   - View selected courses (No, Course Code, Course Name, Slot)
- *   - Remove individual courses
- *   - Remove all courses
- *   - Toggle "All subjects mode"
- *   - Navigate to timetable generation
- *
- * DATABASE INTERACTIONS:
- * - No direct DB reads/writes on this page
- * - All data is passed from the Preferences page via context/state
- *
- * DATA FLOW:
- * - Input: fullCourseData[] from Preferences page
- * - Processing: User modifies course list (add/remove)
- * - Output: Calls generateTT() from lib/utils.ts to produce timetableDisplayData[][]
- * - Stores result in TimetableContext (lib/TimeTableContext.tsx)
- * - Navigates to /timetable
- *
- * KEY FUNCTIONS:
- * - lib/utils.ts → generateTT(courseData) generates all valid timetable combinations
- * - lib/globalCourses.ts → setGlobalCourses() stores courses for PDF export
- * - lib/TimeTableContext.tsx → setTimetableData() stores generated combinations
- *
- * RELATED FILES:
- * - lib/type.ts → fullCourseData, timetableDisplayData types
- * - lib/utils.ts → generateTT() algorithm
- * - lib/globalCourses.ts → global course storage for export
- * - lib/TimeTableContext.tsx → context for passing data to timetable page
- * - lib/slots.ts → slot clash detection
- */
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fullCourseData } from '@/lib/type';
+import { getCourseType } from '@/lib/course_codes_map';
+
+type FacultyEntry = {
+    uid: string;
+    no: number;
+    courseCode: string;
+    courseName: string;
+    slot: string;
+    facultyName: string;
+};
+
+type CourseGroup = {
+    courseCode: string;
+    courseName: string;
+    slot: string;
+    faculties: string[];
+};
+
+const setCookie = (name: string, value: string, days = 30) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`;
+};
+
+const getCookie = (name: string): string | null => {
+    const nameEQ = `${name}=`;
+    const cookies = document.cookie.split(';');
+
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.indexOf(nameEQ) === 0) {
+            return decodeURIComponent(cookie.substring(nameEQ.length));
+        }
+    }
+
+    return null;
+};
+
+const parseSubject = (subject: string | null) => {
+    if (!subject) {
+        return { courseCode: 'N/A', courseName: 'N/A' };
+    }
+
+    const [courseCode, ...nameParts] = subject.split(' - ');
+    return {
+        courseCode: courseCode || 'N/A',
+        courseName: nameParts.join(' - ') || subject,
+    };
+};
+
+const createUid = () =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const buildPreferenceCoursesFromRows = (rows: FacultyEntry[]): fullCourseData[] => {
+    const groups: CourseGroup[] = [];
+
+    rows.forEach((row) => {
+        const existingGroup = groups.find(
+            (group) =>
+                group.courseCode === row.courseCode &&
+                group.courseName === row.courseName &&
+                group.slot === row.slot,
+        );
+
+        if (existingGroup) {
+            existingGroup.faculties.push(row.facultyName);
+            return;
+        }
+
+        groups.push({
+            courseCode: row.courseCode,
+            courseName: row.courseName,
+            slot: row.slot,
+            faculties: [row.facultyName],
+        });
+    });
+
+    return groups.map((group) => ({
+        id: `${group.courseCode} - ${group.courseName}_${group.slot}_${group.faculties.join('_')}`,
+        courseType: getCourseType(group.courseCode),
+        courseCode: group.courseCode,
+        courseName: group.courseName,
+        courseSlots: [
+            {
+                slotName: group.slot,
+                slotFaculties: group.faculties.map((facultyName) => ({ facultyName })),
+            },
+        ],
+    }));
+};
 
 export default function CoursesPage() {
-    // TODO: Implement courses UI
-    // - Display selected courses table (No, Course Code, Course Name, Slot)
-    // - Add share/remove buttons per course
-    // - Add "Remove all" button
-    // - Add "All subjects mode" toggle
-    //
-    // On "Next" / navigate to timetable:
-    //   const { result, clashes } = generateTT(selectedCourses);
-    //   setGlobalCourses(selectedCourses);
-    //   setTimetableData(result);
-    //   router.push('/timetable');
+    const router = useRouter();
+
+    const [allSubjectsMode, setAllSubjectsMode] = useState(false);
+    const [faculties, setFaculties] = useState<FacultyEntry[]>([]);
+    const [lastRemovedFaculties, setLastRemovedFaculties] = useState<FacultyEntry[] | null>(null);
+    const [loaded, setLoaded] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const [rowEffects, setRowEffects] = useState<Record<string, string>>({});
+    const [isReordering, setIsReordering] = useState(false);
+
+    useEffect(() => {
+        try {
+            const savedPreferenceCourses = getCookie('preferenceCourses');
+            const savedFaculties = getCookie('preferenceMultipleFaculties');
+            const savedSubject = getCookie('preferenceSubject');
+            const savedSlot = getCookie('preferenceSlot');
+            const savedAllSubjectsMode = getCookie('allSubjectsMode');
+
+            if (savedAllSubjectsMode) {
+                setAllSubjectsMode(JSON.parse(savedAllSubjectsMode));
+            }
+
+            if (savedPreferenceCourses) {
+                const storedCourses = JSON.parse(savedPreferenceCourses) as fullCourseData[];
+                const rows: FacultyEntry[] = [];
+
+                storedCourses.forEach((course) => {
+                    course.courseSlots.forEach((courseSlot) => {
+                        courseSlot.slotFaculties.forEach((faculty) => {
+                            rows.push({
+                                uid: createUid(),
+                                no: rows.length + 1,
+                                courseCode: course.courseCode || 'N/A',
+                                courseName: course.courseName || 'N/A',
+                                slot: courseSlot.slotName || 'N/A',
+                                facultyName: faculty.facultyName || 'N/A',
+                            });
+                        });
+                    });
+                });
+
+                setFaculties(rows);
+            } else if (savedFaculties) {
+                const { courseCode, courseName } = parseSubject(savedSubject);
+                const slot = savedSlot || 'N/A';
+                const facultyList = JSON.parse(savedFaculties) as string[];
+                const rows: FacultyEntry[] = facultyList.map((faculty, index) => ({
+                    uid: createUid(),
+                    no: index + 1,
+                    courseCode,
+                    courseName,
+                    slot,
+                    facultyName: faculty,
+                }));
+                setFaculties(rows);
+            }
+        } catch (error) {
+            console.error('Error reading faculty cookies:', error);
+        } finally {
+            setLoaded(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setCookie('allSubjectsMode', JSON.stringify(allSubjectsMode));
+    }, [allSubjectsMode, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        const facultyNames = faculties.map((faculty) => faculty.facultyName);
+        setCookie('preferenceMultipleFaculties', JSON.stringify(facultyNames));
+
+        const updatedCourses = buildPreferenceCoursesFromRows(faculties);
+        setCookie('preferenceCourses', JSON.stringify(updatedCourses));
+    }, [faculties, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        const timer = window.setTimeout(() => setIsVisible(true), 50);
+        return () => window.clearTimeout(timer);
+    }, [loaded]);
+
+    const renumber = (items: FacultyEntry[]) =>
+        items.map((item, index) => ({
+            ...item,
+            no: index + 1,
+        }));
+
+    const triggerRowEffects = (effects: Record<string, string>, duration = 500) => {
+        setRowEffects((previous) => ({ ...previous, ...effects }));
+        window.setTimeout(() => {
+            setRowEffects((previous) => {
+                const next = { ...previous };
+                Object.keys(effects).forEach((uid) => {
+                    delete next[uid];
+                });
+                return next;
+            });
+        }, duration);
+    };
+
+    const handleMoveUp = (index: number) => {
+        if (index <= 0 || isReordering) return;
+        const movingRow = faculties[index];
+        const affectedRow = faculties[index - 1];
+        setIsReordering(true);
+        triggerRowEffects(
+            {
+                [movingRow.uid]: 'animate-cartoon-move-up',
+                [affectedRow.uid]: 'animate-cartoon-move-down',
+            },
+            640,
+        );
+
+        window.setTimeout(() => {
+            setFaculties((previous) => {
+                const currentIndex = previous.findIndex((item) => item.uid === movingRow.uid);
+                if (currentIndex <= 0) return previous;
+                const next = [...previous];
+                [next[currentIndex - 1], next[currentIndex]] = [next[currentIndex], next[currentIndex - 1]];
+                return renumber(next);
+            });
+            setIsReordering(false);
+        }, 360);
+    };
+
+    const handleMoveDown = (index: number) => {
+        if (index >= faculties.length - 1 || isReordering) return;
+        const movingRow = faculties[index];
+        const affectedRow = faculties[index + 1];
+        setIsReordering(true);
+        triggerRowEffects(
+            {
+                [movingRow.uid]: 'animate-cartoon-move-down',
+                [affectedRow.uid]: 'animate-cartoon-move-up',
+            },
+            640,
+        );
+
+        window.setTimeout(() => {
+            setFaculties((previous) => {
+                const currentIndex = previous.findIndex((item) => item.uid === movingRow.uid);
+                if (currentIndex < 0 || currentIndex >= previous.length - 1) return previous;
+                const next = [...previous];
+                [next[currentIndex], next[currentIndex + 1]] = [next[currentIndex + 1], next[currentIndex]];
+                return renumber(next);
+            });
+            setIsReordering(false);
+        }, 360);
+    };
+
+    const handleRemove = (index: number) => {
+        const rowToRemove = faculties[index];
+        if (!rowToRemove) return;
+
+        triggerRowEffects({ [rowToRemove.uid]: 'animate-dust-out' }, 820);
+
+        window.setTimeout(() => {
+            setFaculties((previous) => {
+                const next = previous.filter((item) => item.uid !== rowToRemove.uid);
+                return renumber(next);
+            });
+        }, 350);
+    };
+
+    const handleRemoveAll = () => {
+        if (confirm('Are you sure you want to remove all faculties?')) {
+            setLastRemovedFaculties(faculties);
+            setFaculties([]);
+        }
+    };
+
+    const handleUndoRemoveAll = () => {
+        if (!lastRemovedFaculties || lastRemovedFaculties.length === 0) return;
+        setFaculties(renumber(lastRemovedFaculties));
+        setLastRemovedFaculties(null);
+    };
+
+    if (!loaded) {
+        return (
+            <div className="min-h-screen bg-[#F5E6D3] font-sans flex items-center justify-center">
+                <div className="text-gray-700 font-semibold">Loading...</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-cream font-sans flex flex-col items-center">
-            {/* TODO: Implement course list UI */}
-            {/* This page shows selected courses and allows modification before timetable generation */}
+        <div className={`min-h-screen bg-[#F5E6D3] font-sans flex flex-col transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+            <div className="flex-1 p-8">
+                <h1 className="text-4xl font-bold mb-8 text-black animate-lucid-fade-up">Your Faculty Preferences</h1>
+
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 transition-shadow duration-300 hover:shadow-xl animate-lucid-fade-up-delayed">
+                    <div className="bg-green-400 px-8 py-4 rounded-t-2xl">
+                        <h2 className="text-2xl font-bold text-black">Selected Faculties</h2>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-gray-100 border-b border-gray-300">
+                                    <th className="px-6 py-4 text-left font-bold text-black w-12">No</th>
+                                    <th className="px-6 py-4 text-left font-bold text-black">Course Code</th>
+                                    <th className="px-6 py-4 text-left font-bold text-black">Course Name</th>
+                                    <th className="px-6 py-4 text-left font-bold text-black">Slot</th>
+                                    <th className="px-6 py-4 text-left font-bold text-black">Faculty Name</th>
+                                    <th className="px-6 py-4 text-center font-bold text-black w-32">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {faculties.length > 0 ? (
+                                    faculties.map((faculty, index) => (
+                                        <tr
+                                            key={faculty.uid}
+                                            className={`border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 animate-lucid-row ${rowEffects[faculty.uid] || ''} ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'pointer-events-none' : ''}`}
+                                        >
+                                            <td className="px-6 py-4 text-black font-semibold text-center">{faculty.no}</td>
+                                            <td className="px-6 py-4 text-black font-mono font-bold text-sm">{faculty.courseCode}</td>
+                                            <td className="px-6 py-4 text-black">
+                                                <div className="text-sm whitespace-pre-wrap">{faculty.courseName}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-black">
+                                                <div className="text-sm whitespace-pre-wrap">{faculty.slot}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-black font-semibold">{faculty.facultyName}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        onClick={() => handleMoveUp(index)}
+                                                        disabled={index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
+                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === 0 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5'}`}
+                                                        title="Move up"
+                                                    >
+                                                        ↑
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleMoveDown(index)}
+                                                        disabled={index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering}
+                                                        className={`px-3 py-2 rounded text-lg font-bold transition-all duration-200 ${index === faculties.length - 1 || rowEffects[faculty.uid] === 'animate-dust-out' || isReordering ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-0.5'}`}
+                                                        title="Move down"
+                                                    >
+                                                        ↓
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRemove(index)}
+                                                        disabled={rowEffects[faculty.uid] === 'animate-dust-out'}
+                                                        className={`px-3 py-2 rounded text-lg font-bold text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 ${rowEffects[faculty.uid] === 'animate-dust-out' ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
+                                                        title="Remove"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                            No faculties selected yet
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="bg-gray-50 px-8 py-4 border-t border-gray-200 flex justify-between items-center ">
+                        <div className="flex items-center gap-2 bg-yellow-100 rounded-lg px-4 py-2 hidden">
+                            <span className="text-yellow-600 font-bold text-lg">?</span>
+                            <span className="text-sm text-gray-700 font-medium">All subjects mode</span>
+                            <button
+                                onClick={() => setAllSubjectsMode((prev) => !prev)}
+                                className={`ml-3 w-12 h-6 rounded-full transition-all duration-300 flex items-center px-1 shadow-sm ${allSubjectsMode ? 'bg-blue-500 scale-105 ring-2 ring-blue-200 animate-cartoon-pulse' : 'bg-gray-300'}`}
+                            >
+                                <div className={`w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-md ${allSubjectsMode ? 'translate-x-6 animate-cartoon-bounce' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            {faculties.length === 0 && lastRemovedFaculties && lastRemovedFaculties.length > 0 && (
+                                <button
+                                    onClick={handleUndoRemoveAll}
+                                    className="text-blue-600 hover:text-blue-800 font-semibold text-sm transition"
+                                >
+                                    Undo remove all
+                                </button>
+                            )}
+
+                            <button
+                                onClick={handleRemoveAll}
+                                disabled={faculties.length === 0}
+                                className={`text-red-500 hover:text-red-700 font-semibold text-sm transition ${faculties.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                            >
+                                Remove all
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white border-t border-gray-300 py-6 px-8 shadow-lg animate-lucid-fade-up-delayed">
+                <div className="flex items-center justify-between max-w-7xl mx-auto">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                        <span className="text-gray-700 text-sm font-semibold">Sravan Kowsik Gonugunte</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {[1, 2, 3, 4].map((num) => (
+                            <button
+                                key={num}
+                                onClick={() => {
+                                    if (num === 1) router.push('/preferences');
+                                    if (num === 2) router.push('/courses');
+                                    if (num === 3) router.push('/timetable');
+                                    if (num === 4) router.push('/saved');
+                                }}
+                                className={`px-5 py-2 rounded-lg font-semibold text-sm ${num === 2 ? 'bg-[#A0C4FF] text-black' : 'bg-[#A0C4FF]/40 text-gray-700'}`}
+                            >
+                                {num === 2 ? '2. Faculty Preferences' : num}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => router.push('/preferences')}
+                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition"
+                        >
+                            previous
+                        </button>
+                        <button
+                            onClick={() => router.push('/timetable')}
+                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition"
+                        >
+                            next
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <style jsx>{`
+                @keyframes cartoonBounce {
+                    0% { transform: translateX(1.5rem) scale(1); }
+                    35% { transform: translateX(1.5rem) scale(1.18); }
+                    60% { transform: translateX(1.5rem) scale(0.92); }
+                    100% { transform: translateX(1.5rem) scale(1); }
+                }
+
+                @keyframes cartoonPulse {
+                    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35); }
+                    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+                }
+
+                .animate-cartoon-bounce {
+                    animation: cartoonBounce 350ms ease-out;
+                }
+
+                .animate-cartoon-pulse {
+                    animation: cartoonPulse 1200ms ease-out;
+                }
+
+                @keyframes lucidFadeUp {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                @keyframes lucidRow {
+                    from { opacity: 0; transform: translateX(8px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+
+                .animate-lucid-fade-up {
+                    animation: lucidFadeUp 420ms ease-out;
+                }
+
+                .animate-lucid-fade-up-delayed {
+                    animation: lucidFadeUp 520ms ease-out;
+                }
+
+                .animate-lucid-row {
+                    animation: lucidRow 260ms ease-out;
+                }
+
+                @keyframes cartoonMoveUp {
+                    0% { transform: translateY(0) scale(1, 1); }
+                    40% { transform: translateY(-8px) scale(1.02, 0.98); }
+                    70% { transform: translateY(2px) scale(0.995, 1.005); }
+                    100% { transform: translateY(0) scale(1, 1); }
+                }
+
+                @keyframes cartoonMoveDown {
+                    0% { transform: translateY(0) scale(1, 1); }
+                    40% { transform: translateY(8px) scale(1.02, 0.98); }
+                    70% { transform: translateY(-2px) scale(0.995, 1.005); }
+                    100% { transform: translateY(0) scale(1, 1); }
+                }
+
+                @keyframes dustOut {
+                    0% {
+                        opacity: 1;
+                        transform: translateX(0) scale(1);
+                        filter: blur(0);
+                        background-position: 0 0;
+                    }
+                    55% {
+                        opacity: 0.65;
+                        transform: translateX(10px) scale(0.98);
+                        filter: blur(1px);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translateX(28px) scale(0.9);
+                        filter: blur(4px);
+                        background-position: 130% 0;
+                    }
+                }
+
+                .animate-cartoon-move-up {
+                    animation: cartoonMoveUp 620ms cubic-bezier(0.22, 0.7, 0.2, 1);
+                }
+
+                .animate-cartoon-move-down {
+                    animation: cartoonMoveDown 620ms cubic-bezier(0.22, 0.7, 0.2, 1);
+                }
+
+                .animate-dust-out {
+                    background-image: repeating-linear-gradient(
+                        90deg,
+                        rgba(255, 255, 255, 0) 0 6px,
+                        rgba(255, 255, 255, 0.45) 6px 8px
+                    );
+                    background-size: 200% 100%;
+                    animation: dustOut 420ms steps(6, end) forwards;
+                }
+            `}</style>
         </div>
     );
 }

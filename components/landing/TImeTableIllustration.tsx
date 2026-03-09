@@ -1,6 +1,6 @@
 import { useState } from "react";
 export default function TimetableIllustration() {
-  const [hiddenBox, setHiddenBox] = useState(null);
+  const [hiddenBox, setHiddenBox] = useState<number | null>(null);
   const colors = [
     ["#A0C4FF", "#CAFFD0", "#E9D5FF", "#CAFFD0", "#FEF08A"],
     ["#A0C4FF", "#E9D5FF", "#FEF08A", "#E9D5FF", "#A0C4FF"],
