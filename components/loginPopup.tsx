@@ -31,7 +31,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
         {/* Google Button */}
         <button
           onClick={() => signIn("google")}
-          className="flex items-center gap-3 px-6 py-3 border rounded-xl shadow-sm hover:shadow-md transition mt-4"
+          className="flex items-center gap-3 px-6 py-3 border rounded-xl shadow-sm hover:shadow-md hover:bg-gray-50 transition mt-4 cursor-pointer"
         >
           <img
             src="https://developers.google.com/identity/images/g-logo.png"
