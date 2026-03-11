@@ -346,7 +346,7 @@ export default function CoursesPage() {
 
     return (
         <div className={`min-h-screen bg-[#F5E6D3] font-sans flex flex-col transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-            <div className="flex-1 p-8">
+            <div className="flex-1 p-[clamp(16px,2vw,32px)] overflow-auto">
                 
 
                 {clashingUids.size > 0 && (
@@ -369,7 +369,7 @@ export default function CoursesPage() {
                     </div>
 
                     {/* Table header */}
-                    <div className="grid grid-cols-[56px_160px_1fr_140px_160px_120px] border-b border-gray-200 bg-white">
+                    <div className="grid grid-cols-[40px_minmax(80px,1fr)_minmax(100px,2fr)_minmax(60px,1fr)_minmax(80px,1fr)_minmax(80px,100px)] border-b border-gray-200 bg-white">
                         <div className="px-4 py-3 text-sm font-bold text-black">No</div>
                         <div className="px-4 py-3 text-sm font-bold text-black">Course Code</div>
                         <div className="px-4 py-3 text-sm font-bold text-black">Course Name</div>
@@ -392,7 +392,7 @@ export default function CoursesPage() {
                                 return (
                                     <div key={faculty.uid}>
                                         <div
-                                            className={`grid grid-cols-[56px_160px_1fr_140px_160px_120px] border-b border-gray-100 items-center transition-colors ${
+                                            className={`grid grid-cols-[40px_minmax(80px,1fr)_minmax(100px,2fr)_minmax(60px,1fr)_minmax(80px,1fr)_minmax(80px,100px)] border-b border-gray-100 items-center transition-colors ${
                                                 isDusting ? 'pointer-events-none' : ''
                                             } ${
                                                 hasClash ? 'bg-red-50' : 'bg-white hover:bg-gray-50'
@@ -451,7 +451,7 @@ export default function CoursesPage() {
                                         </div>
                                         {/* Inline undo row shown right after deleted item position */}
                                         {deletedRow && deletedRow.index === index + 1 && (
-                                            <div className="grid grid-cols-[56px_160px_1fr_140px_160px_120px] border-b border-gray-100 bg-gray-50 items-center">
+                                            <div className="grid grid-cols-[40px_minmax(80px,1fr)_minmax(100px,2fr)_minmax(60px,1fr)_minmax(80px,1fr)_minmax(80px,100px)] border-b border-gray-100 bg-gray-50 items-center">
                                                 <div />
                                                 <div className="col-span-4 px-4 py-3 text-sm text-gray-500 italic">Subject deleted.</div>
                                                 <div className="px-4 py-3">
@@ -467,7 +467,7 @@ export default function CoursesPage() {
                             })}
                             {/* Undo row at bottom when deleted row was last */}
                             {deletedRow && deletedRow.index >= faculties.length && (
-                                <div className="grid grid-cols-[56px_160px_1fr_140px_160px_120px] border-b border-gray-100 bg-gray-50 items-center">
+                                <div className="grid grid-cols-[40px_minmax(80px,1fr)_minmax(100px,2fr)_minmax(60px,1fr)_minmax(80px,1fr)_minmax(80px,100px)] border-b border-gray-100 bg-gray-50 items-center">
                                     <div />
                                     <div className="col-span-4 px-4 py-3 text-sm text-gray-500 italic">Subject deleted.</div>
                                     <div className="px-4 py-3">
@@ -480,7 +480,7 @@ export default function CoursesPage() {
                             )}
                             {/* Remove all undo row */}
                             {faculties.length === 0 && lastRemovedFaculties && lastRemovedFaculties.length > 0 && (
-                                <div className="grid grid-cols-[56px_160px_1fr_140px_160px_120px] border-b border-gray-100 bg-gray-50 items-center">
+                                <div className="grid grid-cols-[40px_minmax(80px,1fr)_minmax(100px,2fr)_minmax(60px,1fr)_minmax(80px,1fr)_minmax(80px,100px)] border-b border-gray-100 bg-gray-50 items-center">
                                     <div />
                                     <div className="col-span-4 px-4 py-3 text-sm text-gray-500 italic">All courses deleted.</div>
                                     <div className="px-4 py-3">
@@ -509,8 +509,8 @@ export default function CoursesPage() {
             </div>
 
             {/* Bottom nav */}
-            <div className="bg-white border-t border-gray-300 py-6 px-8 shadow-lg animate-lucid-fade-up-delayed">
-                <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="bg-white border-t border-gray-300 py-4 px-[clamp(16px,2vw,32px)] shadow-lg animate-lucid-fade-up-delayed shrink-0">
+                <div className="flex flex-wrap items-center justify-between max-w-7xl mx-auto gap-3">
                     <div className="flex items-center gap-3">
                         {session?.user?.image ? (
                             <img src={session.user.image} alt="User avatar" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
@@ -520,7 +520,7 @@ export default function CoursesPage() {
                         <span className="text-gray-700 text-sm font-semibold">{session?.user?.name || 'Guest'}</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {[1, 2, 3, 4].map((num) => (
                             <button
                                 key={num}

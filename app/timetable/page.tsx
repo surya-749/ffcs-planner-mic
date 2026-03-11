@@ -317,7 +317,7 @@ export default function TimetablePage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F5E6D3] font-sans flex flex-col items-center justify-between">
+        <div className="h-screen bg-[#F5E6D3] font-sans flex flex-col justify-between overflow-hidden items-center">
             {/* Toast */}
             {toast && (
                 <div className="fixed top-8 right-8 z-[100] bg-[#1a1a2e] text-white px-8 py-4 rounded-2xl shadow-2xl text-[14px] font-bold animate-[slideIn_0.3s_ease] border border-white/10">
@@ -326,14 +326,14 @@ export default function TimetablePage() {
             )}
 
 
-            <div className="w-[95%] max-w-[1400px] bg-[#FFFBF0] rounded-[32px] p-8 my-8 pb-4 shadow-sm">
-                <div className="flex items-center gap-4 pb-6 ml-2">
+            <div className="w-[98%] max-w-[1800px] flex-1 min-h-0 flex flex-col bg-[#FFFBF0] rounded-[32px] p-[clamp(16px,2vw,32px)] my-[clamp(12px,2vh,32px)] pb-4 shadow-sm mx-auto">
+                <div className="flex items-center gap-4 pb-4 ml-2 shrink-0">
                     <h1 className="text-[26px] font-bold text-black">Timetables Generated</h1>
 
                 </div>
 
                 {/* Main Table Container */}
-                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-x-auto border border-white" id="timetable-grid">
+                <div className="bg-white rounded-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-auto border border-white flex-1 min-h-0 custom-scrollbar" id="timetable-grid">
                     <div id="rat"> <table className="w-full border-collapse bg-white overflow-hidden text-center rounded-[16px]">
                         <thead>
                             <tr className="border-b-[2px] border-white">
@@ -441,7 +441,7 @@ export default function TimetablePage() {
                     </table>
                     </div>
                     {/* Pagination & Action Controls */}
-                    <div className="flex flex-wrap items-center justify-between p-3 py-2 mt-4 mb-1">
+                    <div className="flex flex-wrap items-center justify-between p-3 py-2 mt-auto mb-1 gap-3 shrink-0">
                         {/* Pagination */}
                         <div className="flex items-center gap-1 bg-[#A0C4FF]/80 p-2 rounded-xl shadow-sm">
                             <button
@@ -475,7 +475,7 @@ export default function TimetablePage() {
                         </div>
 
                         {/* Action Bar */}
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-3">
                             <button
                                 onClick={handleShare}
                                 className="flex items-center gap-2 bg-[#A0C4FF] hover:bg-[#8ab2f2] text-black font-semibold py-2.5 px-6 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95 text-[14px]"
@@ -504,8 +504,8 @@ export default function TimetablePage() {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="bg-white border-t border-gray-300 py-4 px-8 shadow-lg animate-lucid-fade-up-delayed w-full mt-auto">
-                <div className="flex items-center justify-between max-w-[1400px] mx-auto">
+            <div className="bg-white border-t border-gray-300 py-4 px-[clamp(16px,2vw,32px)] shadow-lg animate-lucid-fade-up-delayed w-full mt-auto shrink-0">
+                <div className="flex flex-wrap items-center justify-between max-w-[1800px] mx-[1%] lg:mx-auto gap-3">
                     <div className="flex items-center gap-3">
                         {session?.user?.image ? (
                             <img src={session.user.image} alt="User avatar" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
@@ -515,7 +515,7 @@ export default function TimetablePage() {
                         <span className="text-gray-700 text-sm font-semibold">{session?.user?.name || "Guest"}</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {[1, 2, 3, 4].map((num) => (
                             <button
                                 key={num}

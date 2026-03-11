@@ -392,7 +392,7 @@ export default function PreferencesPage() {
     return (
         <div className={`h-screen bg-[#F5E6D3] font-sans flex flex-col overflow-hidden transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
             {/* Main Content */}
-            <div className="flex-1 p-10 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 p-[clamp(16px,2.5vw,40px)] flex flex-col min-h-0 overflow-hidden">
                 <div className="flex items-center gap-4 mb-8 shrink-0">
                     <h1 className="text-4xl font-bold text-black animate-lucid-fade-up">Select Your Preferences</h1>
                     {editingTimetableTitle && (
@@ -405,7 +405,7 @@ export default function PreferencesPage() {
                     )}
                 </div>
 
-                <div className="flex gap-6 flex-1 min-h-0">
+                <div className="flex gap-[clamp(8px,1vw,24px)] flex-1 min-h-0 min-w-0 overflow-hidden">
                     {/* Step Panels */}
                     {[1, 2, 3, 4, 5, 6].map(stepNum => (
                         <div
@@ -416,10 +416,12 @@ export default function PreferencesPage() {
                             style={{ backgroundColor: STEP_COLORS[stepNum - 1] }}
                         >
                             {stepNum === currentStep ? (
-                                <div key={`active-step-${currentStep}`} className="w-full h-full p-8 flex flex-col animate-lucid-panel-in">
-                                    <h2 className="text-2xl font-bold mb-10 text-black">
-                                        {stepNum}. {STEP_LABELS[stepNum - 1]}
-                                    </h2>
+                                <div key={`active-step-${currentStep}`} className="w-full h-full px-6 pb-4 flex flex-col animate-lucid-panel-in">
+                                    <div className="h-[76px] flex items-center shrink-0">
+                                        <h2 className="text-2xl font-bold text-black m-0 leading-none">
+                                            {stepNum}. {STEP_LABELS[stepNum - 1]}
+                                        </h2>
+                                    </div>
 
                                     <div className="flex-1 bg-white/40 rounded-lg p-6 overflow-y-auto custom-scrollbar">
                                         {/* Step 1: Department Selection */}
@@ -570,7 +572,7 @@ export default function PreferencesPage() {
                                     </div>
 
                                     {/* Navigation arrows within active panel */}
-                                    <div className="flex justify-between mt-24 gap-2">
+                                    <div className="flex justify-between mt-auto pt-4 gap-2 shrink-0">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handlePrevious(); }}
                                             disabled={currentStep === 1}
@@ -636,18 +638,18 @@ export default function PreferencesPage() {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="bg-white border-t border-gray-300 py-6 px-8 shadow-lg animate-lucid-fade-up-delayed">
-                <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="bg-white border-t border-gray-300 py-4 px-[clamp(16px,2vw,32px)] shadow-lg animate-lucid-fade-up-delayed shrink-0">
+                <div className="flex flex-wrap items-center justify-between max-w-7xl mx-auto gap-3">
                     <div className="flex items-center gap-3">
                         {session?.user?.image ? (
                             <img src={session.user.image} alt="User avatar" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
                         ) : (
                             <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
                         )}
-                        <span className="text-gray-700 text-sm">{session?.user?.name || "Guest"}</span>
+                        <span className="text-gray-700 text-sm truncate max-w-[120px]">{session?.user?.name || "Guest"}</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {[1, 2, 3, 4].map(num => (
                             <button
                                 key={num}

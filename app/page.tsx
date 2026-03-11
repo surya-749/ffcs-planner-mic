@@ -111,21 +111,21 @@ export default function LandingPage() {
               <button className="btn-primary" onClick={() => setOpen(true)}>Get Started</button>
               {open && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-                  <div className="flex items-center justify-center w-[949px] h-[511px] bg-[#FFFCEE] rounded-[20px] shadow-xl p-8 relative">
-                    <div className="relative bg-[#FAFAFA] w-[900px] h-[459px] flex flex-col items-center rounded-[20px] p-10 shadow-[4px_4px_4px_rgba(191,191,191,0.25)]">
-                      <button onClick={() => setOpen(false)} className="absolute top-6 right-6 text-gray-500 hover:text-black text-[28px]">✕</button>
-                      <h2 className="text-[32px] font-semibold text-center mb-2 absolute top-[50px]">
+                  <div className="flex items-center justify-center w-full max-w-[949px] bg-[#FFFCEE] rounded-[20px] shadow-xl p-6 mx-4 relative">
+                    <div className="relative bg-[#FAFAFA] w-full flex flex-col items-center rounded-[20px] p-8 shadow-[4px_4px_4px_rgba(191,191,191,0.25)]">
+                      <button onClick={() => setOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-black text-[28px] z-10">✕</button>
+                      <h2 className="text-[clamp(22px,3vw,32px)] font-semibold text-center mb-2 mt-2">
                         Welcome {session?.user?.name ? `back, ${session.user.name}` : "to FFCS"}!
                       </h2>
-                      <div className="w-[700px] h-[1px] bg-gray-300 mb-4 absolute top-[90px]"></div>
-                      <p className="text-center text-[20px] mb-12 absolute top-[110px]">Choose what you&apos;d like to do next</p>
-                      <div className="flex gap-14 absolute top-[180px]">
-                        <button className="flex flex-col items-center justify-center bg-[#E9F3E8] border-[5px] border-[#D4F4E6] rounded-[16px] p-6 w-[290px] h-[200px] shadow hover:bg-green-200 transition text-black" onClick={() => { setOpen(false); router.push('/preferences'); }}>
+                      <div className="w-full max-w-[700px] h-[1px] bg-gray-300 mb-4"></div>
+                      <p className="text-center text-[clamp(16px,2vw,20px)] mb-8">Choose what you&apos;d like to do next</p>
+                      <div className="flex flex-wrap gap-8 justify-center mb-4">
+                        <button className="flex flex-col items-center justify-center bg-[#E9F3E8] border-[5px] border-[#D4F4E6] rounded-[16px] p-6 w-[280px] max-w-full h-[200px] shadow hover:bg-green-200 transition text-black" onClick={() => { setOpen(false); router.push('/preferences'); }}>
                           <Image src="/create_new.png" alt="create" width={167} height={101} />
                           <p className="font-medium text-center">Create a new one</p>
                         </button>
                         <button
-                          className="flex flex-col items-center justify-center bg-[#E9D5FF] border-[#F2D8FE] border-[5px] rounded-[16px] p-6 w-[290px] h-[200px] shadow hover:bg-purple-300 transition text-black"
+                          className="flex flex-col items-center justify-center bg-[#E9D5FF] border-[#F2D8FE] border-[5px] rounded-[16px] p-6 w-[280px] max-w-full h-[200px] shadow hover:bg-purple-300 transition text-black"
                           onClick={() => {
                             if (!session) {
                               setOpen(false);
