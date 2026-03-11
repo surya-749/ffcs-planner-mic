@@ -152,57 +152,118 @@ export default function TimetablePage() {
     };
 
     const handleDownload = async () => {
-        if (currentTT.length === 0) return;
+        console.log('handleDownload called', { currentTTLength: currentTT.length });
+        if (currentTT.length === 0) {
+            showToast('No timetable data to download.');
+            window.alert('No timetable data to download.');
+            return;
+        }
         showToast('Preparing PDF...');
         try {
             await exportToPDF('rat', `timetable-option-${currentIndex + 1}.pdf`);
             showToast('PDF downloaded successfully!');
-        } catch (error) {
+        } catch (error: any) {
             console.error('PDF error:', error);
-            showToast('Failed to generate PDF.');
+            showToast('Failed to generate PDF. Please try again.');
+            window.alert('Failed to generate PDF: ' + (error?.message || String(error)));
+        }
+    };
+
+    const copyToClipboard = async (text: string): Promise<boolean> => {
+        // Try the modern Clipboard API first
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch {
+                // Fall through to fallback
+            }
+        }
+        // Fallback: create a temporary textarea and use execCommand
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        } catch {
+            return false;
         }
     };
 
     const handleShare = async () => {
-        if (!session?.user?.email || currentTT.length === 0) return;
-        const editingTimetableId = getCookie('editingTimetableId');
+        console.log('handleShare called!');
+        if (!session?.user?.email) {
+            window.alert('Please sign in to share your timetable.');
+            showToast('Please sign in to share your timetable.');
+            return;
+        }
+        if (currentTT.length === 0) {
+            window.alert('No timetable data to share.');
+            showToast('No timetable data to share.');
+            return;
+        }
 
-        if (editingTimetableId) {
-            // Existing timetable — update slots and get its shareId
-            const slotsData = currentTT.map(s => ({
-                slot: s.slotName,
-                courseCode: s.courseCode,
-                courseName: s.courseName,
-                facultyName: s.facultyName,
-            }));
-            await axios.patch(`/api/timetables/${editingTimetableId}`, {
-                slots: slotsData,
-            });
-            const timetableRes = await axios.get(`/api/timetables/${editingTimetableId}`);
-            const shareId = timetableRes.data.shareId;
-            if (shareId) {
-                const url = `${window.location.origin}/share/${shareId}`;
-                await navigator.clipboard.writeText(url);
-                showToast('Share link copied to clipboard!');
-            }
-        } else {
-            // Save as private timetable first, then share
-            const saved = await handleSave(timetableTitle, { skipRedirect: true });
-            if (saved?.shareId) {
-                const url = `${window.location.origin}/share/${saved.shareId}`;
-                await navigator.clipboard.writeText(url);
-                showToast('Share link copied to clipboard!');
-            } else if (saved?._id) {
-                // Fetch the timetable to get the shareId
-                try {
+        try {
+            console.log('Starting share flow...');
+            const editingTimetableId = getCookie('editingTimetableId');
+            let shareId: string | null = null;
+
+            if (editingTimetableId) {
+                console.log('Editing existing timetable:', editingTimetableId);
+                const slotsData = currentTT.map(s => ({
+                    slot: s.slotName,
+                    courseCode: s.courseCode,
+                    courseName: s.courseName,
+                    facultyName: s.facultyName,
+                }));
+                await axios.patch(`/api/timetables/${editingTimetableId}`, {
+                    slots: slotsData,
+                });
+                const timetableRes = await axios.get(`/api/timetables/${editingTimetableId}`);
+                shareId = timetableRes.data.shareId;
+            } else {
+                console.log('Saving new private timetable...');
+                const saved = await handleSave(timetableTitle, { skipRedirect: true });
+                console.log('Save result:', saved);
+                if (saved?.shareId) {
+                    shareId = saved.shareId;
+                } else if (saved?._id) {
                     const res = await axios.get(`/api/timetables/${saved._id}`);
-                    const url = `${window.location.origin}/share/${res.data.shareId}`;
-                    await navigator.clipboard.writeText(url);
-                    showToast('Share link copied to clipboard!');
-                } catch {
-                    showToast('Timetable saved but failed to get share link.');
+                    shareId = res.data.shareId;
+                } else {
+                    window.alert('Failed to save timetable for sharing (null result).');
+                    showToast('Failed to save timetable for sharing.');
+                    return;
                 }
             }
+
+            console.log('Got shareId:', shareId);
+            if (!shareId) {
+                window.alert('Could not generate or find shareId.');
+                showToast('Could not generate share link.');
+                return;
+            }
+
+            const url = `${window.location.origin}/share/${shareId}`;
+            console.log('Attempting to copy:', url);
+            const copied = await copyToClipboard(url);
+            if (copied) {
+                window.alert('Share link copied!\n' + url);
+                showToast('Share link copied to clipboard!');
+            } else {
+                window.prompt('Copy this share link:', url);
+            }
+        } catch (error: any) {
+            console.error('Share error:', error);
+            window.alert('Share Error: ' + (error?.message || String(error)));
+            showToast('Failed to share timetable. Please try again.');
         }
     };
 

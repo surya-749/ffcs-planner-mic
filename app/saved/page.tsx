@@ -250,13 +250,43 @@ export default function SavedPage() {
         showToast(newState ? 'Timetable is now public' : 'Timetable is now private');
     }
 
+    async function copyToClipboard(text: string): Promise<boolean> {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch {
+                // Fall through to fallback
+            }
+        }
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        } catch {
+            return false;
+        }
+    }
+
     async function handleCopyLink() {
         if (!selectedTT) return;
         try {
             const { data } = await axios.get(`/api/timetables/${selectedTT._id}`);
             const url = `${window.location.origin}/share/${data.shareId}`;
-            await navigator.clipboard.writeText(url);
-            showToast('Share link copied to clipboard!');
+            const copied = await copyToClipboard(url);
+            if (copied) {
+                showToast('Share link copied to clipboard!');
+            } else {
+                window.prompt('Copy this share link:', url);
+            }
         } catch {
             showToast('Failed to copy share link. Please try again.');
         }
