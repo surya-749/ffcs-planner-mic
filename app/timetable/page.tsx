@@ -436,7 +436,7 @@ export default function TimetablePage() {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="bg-white border-t border-gray-300 py-4 px-8 shadow-lg animate-lucid-fade-up-delayed w-full mt-auto">
+            <div className="bg-white border-t border-gray-300 py-4 px-8 shadow-lg animate-lucid-fade-up-delayed w-full mt-auto sticky bottom-0 z-50">
                 <div className="flex items-center justify-between max-w-[1400px] mx-auto">
                     <div className="flex items-center gap-3">
                         {session?.user?.image ? (
