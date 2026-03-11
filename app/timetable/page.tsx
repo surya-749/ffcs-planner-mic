@@ -126,7 +126,9 @@ export default function TimetablePage() {
                 }
             } else {
                 // Create new timetable
-                const title = isPublic ? 'Shared Timetable' : (prompt('Enter a title for this timetable:', 'My Schedule') || 'Untitled');
+                const title = isPublic
+  ? 'Shared Timetable'
+  : (customTitle || timetableTitle || 'Untitled');
                 const res = await axios.post('/api/save-timetable', {
                     title,
                     slots: slotsData,
