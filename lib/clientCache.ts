@@ -14,7 +14,7 @@ const PLANNER_COOKIE_KEYS = [
     'allSubjectsMode',
 ] as const;
 
-const EDITING_COOKIE_KEYS = ['editingTimetableId', 'editingTimetableTitle'] as const;
+const EDITING_COOKIE_KEYS = ['editingTimetableId'] as const;
 
 const clearCookie = (name: string) => {
     document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;

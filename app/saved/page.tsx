@@ -195,7 +195,6 @@ export default function SavedPage() {
 
         // Store the timetable ID being edited
         setCookie('editingTimetableId', tt._id);
-        setCookie('editingTimetableTitle', tt.title);
 
         // Navigate to courses page
         router.push('/courses');
@@ -301,7 +300,7 @@ export default function SavedPage() {
                 <>
                     {/* Main content */}
                     <div className="main-content">
-                        <h1 className="page-title" style={{ marginBottom: '4rem' }}>View Your Saved Timetable</h1>
+                        <h1 className="page-title" style={{ marginBottom: '1rem', marginLeft: '2rem' }}>View Your Saved Timetable</h1>
 
                         <div className="cards-outer">
                             {loading ? (

@@ -64,11 +64,7 @@ export default function TimetablePage() {
         if (hasInitialized.current) return;
         hasInitialized.current = true;
 
-        // Check if we're editing an existing timetable
-        const editingTitle = getCookie('editingTimetableTitle');
-        if (editingTitle) {
-            setTimetableTitle(editingTitle);
-        }
+
 
         if (!timetableData || timetableData.length === 0) {
             const savedCoursesRaw = getCookie('preferenceCourses');
@@ -143,7 +139,7 @@ export default function TimetablePage() {
                 if (res.data.success) {
                     // Update editing cookie so subsequent shares bind to the new save!
                     setCookie('editingTimetableId', res.data.timetable._id);
-                    setCookie('editingTimetableTitle', res.data.timetable.title);
+
 
                     if (!options?.skipRedirect) {
                         showToast('Timetable saved successfully!');
