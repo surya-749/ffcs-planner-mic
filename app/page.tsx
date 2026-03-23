@@ -93,7 +93,7 @@ export default function LandingPage() {
               )}
             </div>
           ) : (
-            <button className="login-btn" onClick={() => setShowLogin(true)}>Login</button>
+            <button className="login-btn" onClick={() => setShowLogin(true)}>Login with Google</button>
           )}
         </nav>
         {showLogin && (
