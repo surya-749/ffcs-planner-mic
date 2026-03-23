@@ -40,6 +40,27 @@ export const exportToPDF = async (
         walker = walker.parentElement;
     }
 
+    // Temporarily remove overflow clipping on the target element and its ancestors
+    // so the full content is captured, not just the visible viewport.
+    const overflowFixups: { el: HTMLElement; overflow: string; overflowX: string }[] = [];
+    let walker: HTMLElement | null = element;
+    while (walker) {
+        const computed = window.getComputedStyle(walker);
+        if (
+            computed.overflow !== 'visible' ||
+            computed.overflowX !== 'visible'
+        ) {
+            overflowFixups.push({
+                el: walker,
+                overflow: walker.style.overflow,
+                overflowX: walker.style.overflowX,
+            });
+            walker.style.overflow = 'visible';
+            walker.style.overflowX = 'visible';
+        }
+        walker = walker.parentElement;
+    }
+
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const canvas = await (html2canvas as any)(element, {
