@@ -542,7 +542,7 @@ export default function CoursesPage() {
                         <button
                             onClick={() => {
                                 deleteCookie('editingTimetableId');
-                                router.push('/preferences');
+                                router.back();
                             }}
                             className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition cursor-pointer"
                         >

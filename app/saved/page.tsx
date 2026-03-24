@@ -389,7 +389,7 @@ export default function SavedPage() {
                         </div>
 
                         <div className="nav-btns">
-                            <button onClick={() => router.push('/timetable')} className="btn-prev">Previous</button>
+                            <button onClick={() => router.back()} className="btn-prev">Previous</button>
                             <button disabled className="btn-next" style={{ opacity: 0.4, cursor: 'not-allowed' }}>Next</button>
                         </div>
                     </div>

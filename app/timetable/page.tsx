@@ -553,8 +553,7 @@ export default function TimetablePage() {
                     <div className="flex gap-3">
                         <button
                             onClick={() => {
-                                // Keep editing state when going back to make more changes
-                                router.push('/courses');
+                                router.back();
                             }}
                             className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition cursor-pointer"
                         >
