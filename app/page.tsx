@@ -322,7 +322,7 @@ export default function LandingPage() {
                 <Image src="/slot_icon.png" alt="slot" width={32} height={32} />
                 <span>View slots</span>
               </button>
-              <button className="f-btn f-btn-team">
+              <button className="f-btn f-btn-team" onClick={() => router.push('/team')}>
                 <Image src="/team_icon.png" alt="team" width={32} height={32} />
                 <span>View team</span>
               </button>
