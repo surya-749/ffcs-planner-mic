@@ -29,7 +29,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px clamp(20px, 4vw, 60px);
+    height: 88px;
+    padding: 0 clamp(20px, 4vw, 64px);
     position: relative;
     background: #ffffff;
     z-index: 10;
@@ -41,8 +42,9 @@ body {
 }
 
 .logo {
-    font-size: 28px;
+    font-size: 40px;
     font-weight: 800;
+    line-height: 1;
     color: #000;
     letter-spacing: 1px;
 }
@@ -62,6 +64,25 @@ body {
 
 .login-btn:hover {
     background: #f5f8ff;
+    border-color: #9fc2fb;
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        height: 76px;
+        padding: 0 20px;
+    }
+
+    .logo {
+        font-size: 30px;
+    }
+
+    .login-btn {
+        min-width: 100px;
+        height: 40px;
+        padding: 0 14px;
+        font-size: 13px;
+    }
 }
 
 /* Hero Section */
