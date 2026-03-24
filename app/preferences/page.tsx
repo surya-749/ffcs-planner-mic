@@ -79,6 +79,8 @@ export default function PreferencesPage() {
     const [facultyPriority, setFacultyPriority] = useState<'slot' | 'faculty'>('slot');
     const [isVisible, setIsVisible] = useState(false);
 
+    const keepFirst = (items: string[]): string[] => (items.length > 0 ? [items[0]] : []);
+
 
     // Load preferences from cookies on mount
     useEffect(() => {
@@ -96,9 +98,18 @@ export default function PreferencesPage() {
                 setCurrentStep(parsedStep);
             }
         }
-        if (savedDepartments) setSelectedDepartments(JSON.parse(savedDepartments));
-        if (savedDomains) setSelectedDomains(JSON.parse(savedDomains));
-        if (savedSubjects) setSelectedSubjects(JSON.parse(savedSubjects));
+        if (savedDepartments) {
+            const parsed = JSON.parse(savedDepartments);
+            setSelectedDepartments(keepFirst(Array.isArray(parsed) ? parsed : []));
+        }
+        if (savedDomains) {
+            const parsed = JSON.parse(savedDomains);
+            setSelectedDomains(keepFirst(Array.isArray(parsed) ? parsed : []));
+        }
+        if (savedSubjects) {
+            const parsed = JSON.parse(savedSubjects);
+            setSelectedSubjects(keepFirst(Array.isArray(parsed) ? parsed : []));
+        }
         if (savedSlots) setSelectedSlots(JSON.parse(savedSlots));
         if (savedFaculties) setSelectedFaculties(JSON.parse(savedFaculties));
         if (savedPriority) setFacultyPriority(savedPriority as 'slot' | 'faculty');
@@ -266,9 +277,7 @@ export default function PreferencesPage() {
     };
 
     const handleDepartmentSelect = (dept: string) => {
-        setSelectedDepartments(prev =>
-            prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]
-        );
+        setSelectedDepartments(prev => (prev[0] === dept ? [] : [dept]));
         setSelectedDomains([]);
         setSelectedSubjects([]);
         setSelectedSlots([]);
@@ -276,18 +285,14 @@ export default function PreferencesPage() {
     };
 
     const handleDomainSelect = (domain: string) => {
-        setSelectedDomains(prev =>
-            prev.includes(domain) ? prev.filter(d => d !== domain) : [...prev, domain]
-        );
+        setSelectedDomains(prev => (prev[0] === domain ? [] : [domain]));
         setSelectedSubjects([]);
         setSelectedSlots([]);
         setSelectedFaculties([]);
     };
 
     const handleSubjectSelect = (subject: string) => {
-        setSelectedSubjects(prev =>
-            prev.includes(subject) ? prev.filter(s => s !== subject) : [...prev, subject]
-        );
+        setSelectedSubjects(prev => (prev[0] === subject ? [] : [subject]));
         setSelectedSlots([]);
         setSelectedFaculties([]);
     };
@@ -432,6 +437,9 @@ export default function PreferencesPage() {
                                         {/* Step 1: Department Selection */}
                                         {stepNum === 1 && (
                                             <div style={{ display: 'grid', gap: '10px' }}>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 mb-1">
+                                                    Select one option
+                                                </p>
                                                 {departments.map(dept => (
                                                     <button
                                                         key={dept}
@@ -450,6 +458,9 @@ export default function PreferencesPage() {
                                         {/* Step 2: Domain Selection */}
                                         {stepNum === 2 && (
                                             <div style={{ display: 'grid', gap: '10px' }}>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 mb-1">
+                                                    Select one option
+                                                </p>
                                                 {domains.length > 0 ? domains.map(domain => (
                                                     <button
                                                         key={domain}
@@ -472,6 +483,9 @@ export default function PreferencesPage() {
                                         {/* Step 3: Subject Selection */}
                                         {stepNum === 3 && (
                                             <div style={{ display: 'grid', gap: '10px' }}>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 mb-1">
+                                                    Select one option
+                                                </p>
                                                 {subjects.length > 0 ? subjects.map(subject => (
                                                     <button
                                                         key={subject}
@@ -521,6 +535,9 @@ export default function PreferencesPage() {
                                         {/* Step 5: Faculty Selection */}
                                         {stepNum === 5 && (
                                             <div style={{ display: 'grid', gap: '10px' }}>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 mb-1">
+                                                    Select one or more options
+                                                </p>
                                                 {faculties.length > 0 ? faculties.map((faculty, idx) => (
                                                     <button
                                                         key={idx}
