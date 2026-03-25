@@ -222,13 +222,19 @@ export default function SavedPage() {
 
     async function handleRename() {
         if (!selectedTT || !renameValue.trim()) return;
-        await axios.patch(`/api/timetables/${selectedTT._id}`, { title: renameValue });
-        setTimetables(prev =>
-            (prev ?? []).map(t => (t._id === selectedTT._id ? { ...t, title: renameValue } : t))
-        );
-        if (selectedTT) setSelectedTT({ ...selectedTT, title: renameValue });
-        setRenameOpen(false);
-        showToast('Timetable renamed');
+        try {
+            await axios.patch(`/api/timetables/${selectedTT._id}`, { title: renameValue });
+            setTimetables(prev =>
+                (prev ?? []).map(t => (t._id === selectedTT._id ? { ...t, title: renameValue } : t))
+            );
+            if (selectedTT) setSelectedTT({ ...selectedTT, title: renameValue });
+            setRenameOpen(false);
+            showToast('Timetable renamed');
+        } catch (error: any) {
+            const detail = error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Unknown error';
+            console.error('Rename error:', detail, error);
+            showToast(`Failed to rename: ${detail}`);
+        }
     }
 
     async function handleTogglePublic() {
@@ -389,7 +395,7 @@ export default function SavedPage() {
                         </div>
 
                         <div className="nav-btns">
-                            <button onClick={() => router.push('/timetable')} className="btn-prev">Previous</button>
+                            <button onClick={() => router.back()} className="btn-prev">Previous</button>
                             <button disabled className="btn-next" style={{ opacity: 0.4, cursor: 'not-allowed' }}>Next</button>
                         </div>
                     </div>
@@ -553,6 +559,7 @@ function TimetableDetailView({
     onDelete,
     onCopyLink,
     onRename,
+    onTogglePublic,
     session,
     router,
     showToast,
@@ -740,6 +747,35 @@ function TimetableDetailView({
                     </div>
                     {/* Share / Download buttons */}
                     <div className="dv-grid-actions">
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                                className={tt.isPublic ? 'dv-share-active-btn' : 'dv-share-btn'}
+                                onClick={onTogglePublic}
+                                title={tt.isPublic ? "Unshare Timetable" : "Share Timetable"}
+                            >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="18" cy="5" r="3" />
+                                    <circle cx="6" cy="12" r="3" />
+                                    <circle cx="18" cy="19" r="3" />
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                                {tt.isPublic ? 'Shared (Public)' : 'Share'}
+                            </button>
+                            {tt.isPublic && (
+                                <button
+                                    className="dv-share-btn"
+                                    onClick={onCopyLink}
+                                    title="Copy Public Link"
+                                >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    </svg>
+                                    Copy Link
+                                </button>
+                            )}
+                        </div>
                         <button className="dv-download-btn" onClick={handleDownload} >
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                             Download
