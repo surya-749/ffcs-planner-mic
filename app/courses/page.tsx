@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react';
 import { fullCourseData } from '@/lib/type';
 import { getCourseType } from '@/lib/course_codes_map';
 import { clashMap } from '@/lib/slots';
+import { generateTT } from '@/lib/utils';
+import { useTimetable } from '@/lib/TimeTableContext';
 
 type FacultyEntry = {
     uid: string;
@@ -146,6 +148,7 @@ const findClashes = (faculties: FacultyEntry[]): Set<string> => {
 export default function CoursesPage() {
     const router = useRouter();
     const { data: session } = useSession();
+    const { setTimetableData } = useTimetable();
 
     const [allSubjectsMode, setAllSubjectsMode] = useState(false);
     const [faculties, setFaculties] = useState<FacultyEntry[]>([]);
@@ -357,6 +360,15 @@ export default function CoursesPage() {
         setLastRemovedFaculties(null);
     };
 
+    const syncAndOpenTimetable = () => {
+        const updatedCourses = buildPreferenceCoursesFromRows(faculties);
+        setCookie('preferenceCourses', JSON.stringify(updatedCourses));
+
+        const { result } = generateTT(updatedCourses);
+        setTimetableData(result);
+        router.push('/timetable');
+    };
+
     if (!loaded) {
         return (
             <div className="min-h-screen bg-[#F5E6D3] font-sans flex items-center justify-center">
@@ -548,7 +560,7 @@ export default function CoursesPage() {
                                 onClick={() => {
                                     if (num === 1) router.push('/preferences');
                                     if (num === 2) router.push('/courses');
-                                    if (num === 3) router.push('/timetable');
+                                    if (num === 3) syncAndOpenTimetable();
                                     if (num === 4) router.push('/saved');
                                 }}
                                 className={`px-5 py-2 rounded-lg font-semibold text-sm cursor-pointer ${num === 2
@@ -573,7 +585,7 @@ export default function CoursesPage() {
                         </button>
                         <button
                             onClick={() => {
-                                router.push('/timetable');
+                                syncAndOpenTimetable();
                             }}
                             className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
                         >
