@@ -1269,28 +1269,29 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 14px;
+  flex-wrap: wrap;
 }
 
 .dv-share-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 24px;
-  min-width: 140px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 12px 28px;
+  min-width: 165px;
+  border-radius: 16px;
   border: none;
-  background: #A0C4FF;
-  color: black;
-  font-size: 14px;
-  font-weight: 600;
+  background: #9ec0f5;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
 }
 
 .dv-share-btn:hover {
-  background: #8ab2f2;
+  background: #8db4f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -1302,22 +1303,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 24px;
-  min-width: 140px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 12px 28px;
+  min-width: 165px;
+  border-radius: 16px;
   border: none;
-  background: #C8F7DC;
-  color: black;
-  font-size: 14px;
-  font-weight: 600;
+  background: #d7f3e4;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
 }
 
 .dv-download-btn:hover {
-  background: #b0eac8;
+  background: #c4ead8;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
