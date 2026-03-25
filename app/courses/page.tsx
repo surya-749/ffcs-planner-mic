@@ -567,7 +567,7 @@ export default function CoursesPage() {
                                 deleteCookie('editingTimetableId');
                                 router.back();
                             }}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
+                            className="px-8 py-2.5 bg-[#f1eacb] border-2 border-[#A0C4FF] rounded-lg font-semibold text-sm hover:bg-[#E8DDB8] text-black transition-transform duration-200 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md cursor-pointer"
                         >
                             Previous
                         </button>

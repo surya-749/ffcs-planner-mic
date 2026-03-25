@@ -57,7 +57,8 @@ const getCookie = (name: string): string | null => {
 
 const keepFirst = (arr: string[]): string[] => (arr.length > 0 ? [arr[0]] : []);
 
-const STEP_COLORS = ['#A0C4FF', '#FFB3D9', '#B5EAD7', '#A0C4FF', '#FFB3D9', '#B5EAD7'];
+const STEP_COLORS = ['#9bc0f6', '#eedaff', '#d1fae5', '#9bc0f6', '#eedaff', '#d1fae5'];
+const STEP_BORDER_COLORS = ['#759fdf', '#bfa1eb', '#9dcbb5', '#759fdf', '#bfa1eb', '#9dcbb5'];
 const STEP_LABELS = [
     'Select Department',
     'Select Domain',
@@ -424,32 +425,34 @@ export default function PreferencesPage() {
     return (
         <div className={`h-screen bg-[#F5E6D3] font-sans flex flex-col overflow-hidden transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
             {/* Main Content */}
-            <div className="flex-1 p-[clamp(16px,2.5vw,40px)] flex flex-col min-h-0 overflow-hidden">
-                <div className="flex items-center gap-4 mb-8 shrink-0">
-
-                    <h1 className="text-3xl font-bold text-black animate-lucid-fade-up pb-[10px]">Select Your Preferences</h1>
-
+            <div className="flex-1 p-[clamp(16px,2vw,32px)] pb-0 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex items-center gap-4 mb-4 shrink-0 px-2 lg:px-4">
+                    <h1 className="text-3xl lg:text-4xl font-bold text-black animate-lucid-fade-up">Select Your Preferences</h1>
                 </div>
 
-                <div className="flex gap-[clamp(8px,1vw,24px)] flex-1 min-h-0 min-w-0 overflow-hidden">
-                    {/* Step Panels */}
-                    {[1, 2, 3, 4, 5, 6].map(stepNum => (
-                        <div
-                            key={stepNum}
-                            onClick={stepNum === currentStep ? undefined : () => handleStepClick(stepNum)}
-                            className={`rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden ${stepNum === currentStep ? 'flex-[3]' : 'flex-1'
-                                } ${stepNum === currentStep ? 'shadow-xl cursor-default' : 'shadow-md cursor-pointer'}`}
-                            style={{ backgroundColor: STEP_COLORS[stepNum - 1] }}
-                        >
+                <div className="bg-[#fcfcfc] rounded-t-[24px] shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden p-6 lg:p-8 animate-lucid-fade-up-delayed">
+                    <div className="flex gap-[clamp(8px,1vw,16px)] flex-1 min-h-0 min-w-0 overflow-hidden">
+                        {/* Step Panels */}
+                        {[1, 2, 3, 4, 5, 6].map(stepNum => (
+                            <div
+                                key={stepNum}
+                                onClick={stepNum === currentStep ? undefined : () => handleStepClick(stepNum)}
+                                className={`rounded-xl flex items-center justify-center transition-all duration-300 overflow-hidden ${stepNum === currentStep ? 'flex-[2.8]' : 'flex-1'
+                                    } ${stepNum === currentStep ? 'shadow-lg cursor-default' : 'cursor-pointer hover:opacity-90'}`}
+                                style={{ backgroundColor: STEP_COLORS[stepNum - 1] }}
+                            >
                             {stepNum === currentStep ? (
-                                <div key={`active-step-${currentStep}`} className="w-full h-full px-6 pb-4 flex flex-col animate-lucid-panel-in">
-                                    <div className="h-[76px] flex items-center shrink-0">
-                                        <h2 className="text-2xl font-bold text-black m-0 leading-none">
+                                <div key={`active-step-${currentStep}`} className="w-full h-full px-4 lg:px-6 pb-4 pt-6 flex flex-col animate-lucid-panel-in">
+                                    <div 
+                                        className="flex items-center justify-center shrink-0 border-b-[3px] pb-4 mb-2 mx-2"
+                                        style={{ borderBottomColor: STEP_BORDER_COLORS[stepNum - 1] }}
+                                    >
+                                        <h2 className="text-xl lg:text-2xl font-bold text-black m-0 leading-none">
                                             {stepNum}. {STEP_LABELS[stepNum - 1]}
                                         </h2>
                                     </div>
 
-                                    <div className="flex-1 bg-white/40 rounded-lg p-6 overflow-y-auto custom-scrollbar">
+                                    <div className="flex-1 bg-transparent p-2 lg:p-4 overflow-y-auto custom-scrollbar flex flex-col">
                                         {/* Step 1: Department Selection */}
                                         {stepNum === 1 && (
                                             <div style={{ display: 'grid', gap: '10px' }}>
@@ -580,16 +583,14 @@ export default function PreferencesPage() {
                                                     Professors selected in Step 5 are auto-added:
                                                 </p>
 
-                                                <div className="bg-gray-100 rounded-lg p-3">
-                                                    <p className="text-sm font-bold text-gray-700 mb-2">Your Faculty Preferences:</p>
+                                                <div className="bg-white/50 rounded-lg p-4 shadow-sm border border-white/60">
+                                                    <p className="text-sm font-bold text-gray-800 mb-3">Your Faculty Preferences:</p>
                                                     {selectedFaculties.length > 0 ? (
                                                         <div style={{ display: 'grid', gap: '8px' }}>
                                                             {selectedFaculties.map((faculty, idx) => (
-                                                                <div key={idx} className="flex justify-between items-center bg-white p-3 rounded shadow-sm">
-                                                                    <span className="text-sm font-semibold">{faculty}</span>
-                                                                    
+                                                                <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                                                    <span className="text-sm font-bold text-gray-900">{faculty}</span>
                                                                     <div className="flex gap-2 items-center">
-                                                                        {/* UP BUTTON */}
                                                                         <button
                                                                             onClick={() => moveFacultyUp(idx)}
                                                                             disabled={idx === 0}
@@ -597,8 +598,6 @@ export default function PreferencesPage() {
                                                                         >
                                                                             ↑
                                                                         </button>
-
-                                                                        {/* DOWN BUTTON */}
                                                                         <button
                                                                             onClick={() => moveFacultyDown(idx)}
                                                                             disabled={idx === selectedFaculties.length - 1}
@@ -606,14 +605,12 @@ export default function PreferencesPage() {
                                                                         >
                                                                             ↓
                                                                         </button>
-
-                                                                        {/* DELETE */}
                                                                         <button
                                                                             onClick={() => {
                                                                                 const updated = selectedFaculties.filter((_, i) => i !== idx);
                                                                                 setSelectedFaculties(updated);
                                                                             }}
-                                                                            className="text-red-500 font-bold px-2"
+                                                                            className="text-red-500 hover:text-red-700 font-bold ml-2 text-lg hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
                                                                         >
                                                                             ×
                                                                         </button>
@@ -632,56 +629,52 @@ export default function PreferencesPage() {
                                     </div>
 
                                     {/* Navigation arrows within active panel */}
-                                    <div className="flex justify-between mt-auto pt-4 gap-2 shrink-0">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handlePrevious(); }}
-                                            disabled={currentStep === 1}
-                                            className={`px-4 py-2 rounded-lg bg-white font-bold text-xl cursor-pointer ${currentStep === 1
-                                                ? 'opacity-40 cursor-not-allowed'
-                                                : 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200'
-                                                }`}
-                                        >
-                                            ←
-                                        </button>
-                                        {currentStep === 6 ? (
-                                            <div className="flex w-full gap-2">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleAddAnotherProfessor(); }}
-                                                    title={'Reset to Step 5 and add another professor'}
-                                                    className="flex-1 px-3 py-2 rounded-lg font-bold text-sm bg-[#FFF7ED] text-[#EA580C] hover:bg-[#FFEDD5] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 border border-[#FDBA74] cursor-pointer"
-                                                >
-                                                    + Add another
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        saveCurrentSelection();
-                                                        router.push('/courses');
-                                                    }}
-                                                    title={'Save current preference and view all courses'}
-                                                    className="flex-1 px-4 py-2 rounded-lg font-bold text-sm bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-                                                >
-                                                    Save & Continue →
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                                                disabled={!canProceed()}
-                                                className={`px-4 py-2 rounded-lg bg-white font-bold text-xl cursor-pointer ${!canProceed()
-                                                    ? 'opacity-40 cursor-not-allowed'
-                                                    : 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200'
-                                                    }`}
-                                            >
-                                                →
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="h-full flex items-center justify-center p-2">
-                                    <div
-                                        className="text-xl font-bold tracking-wide whitespace-nowrap"
+                                     <div className="flex justify-between mt-auto pt-4 shrink-0 px-2 pb-2">
+                                         <button
+                                             onClick={(e) => { e.stopPropagation(); handlePrevious(); }}
+                                             style={{ visibility: currentStep === 1 ? 'hidden' : 'visible' }}
+                                             className="w-11 h-11 flex items-center justify-center rounded-[10px] bg-white text-gray-900 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                         >
+                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                         </button>
+                                         
+                                         {currentStep === 6 ? (
+                                             <div className="flex w-full gap-2 px-2">
+                                                 <button
+                                                     onClick={(e) => { e.stopPropagation(); handleAddAnotherProfessor(); }}
+                                                     title={'Reset to Step 5 and add another professor'}
+                                                     className="flex-1 px-3 py-2 rounded-lg font-bold text-sm bg-white text-blue-700 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                                 >
+                                                     + Add another
+                                                 </button>
+                                                 <button
+                                                     onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         saveCurrentSelection();
+                                                         router.push('/courses');
+                                                     }}
+                                                     title={'Save current preference and view all courses'}
+                                                     className="flex-1 px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                                 >
+                                                     Save & Continue →
+                                                 </button>
+                                             </div>
+                                         ) : (
+                                             <button
+                                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                                                 disabled={!canProceed()}
+                                                 className={`w-11 h-11 flex items-center justify-center rounded-[10px] bg-white text-gray-900 shadow-sm transition-all duration-200 cursor-pointer ${!canProceed() ? 'opacity-40 cursor-not-allowed' : 'hover:shadow-md'}`}
+                                             >
+                                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                             </button>
+                                         )}
+                                     </div>
+                                 </div>
+                             ) : (
+                                 <div className="h-full flex flex-col items-center py-6 lg:py-8">
+                                     <span className="text-2xl font-bold text-black mb-4">{stepNum}</span>
+                                     <div
+                                         className="text-lg lg:text-xl font-bold tracking-wide flex-1 flex items-center justify-center whitespace-nowrap"
                                         style={{
                                             writingMode: 'vertical-rl',
                                             textOrientation: 'mixed',
@@ -696,20 +689,25 @@ export default function PreferencesPage() {
                     ))}
                 </div>
             </div>
+        </div>
 
-            {/* Bottom Navigation */}
-            <div className="bg-white border-t border-gray-300 py-4 px-[clamp(16px,2vw,32px)] shadow-lg animate-lucid-fade-up-delayed shrink-0">
-                <div className="flex flex-wrap items-center justify-between max-w-7xl mx-auto gap-3">
-                    <div className="flex items-center gap-3">
+        {/* Bottom Navigation */}
+            <div className="bg-[#F5E6D3] py-6 px-[clamp(16px,2vw,32px)] shrink-0 max-w-7xl mx-auto w-full">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 w-full">
+                    {/* Left: User Avatar */}
+                    <div className="bg-white rounded-[12px] p-3 shadow-sm flex items-center gap-3 justify-self-start mr-auto">
                         {session?.user?.image ? (
-                            <img src={session.user.image} alt="User avatar" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
+                            <img src={session.user.image} alt="User avatar" className="w-[36px] h-[36px] rounded-lg" referrerPolicy="no-referrer" />
                         ) : (
-                            <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                            <div className="w-[36px] h-[36px] bg-gray-300 rounded-lg flex items-center justify-center font-bold text-white text-sm">
+                                {session?.user?.name?.[0] || "?"}
+                            </div>
                         )}
-                        <span className="text-gray-700 text-sm truncate max-w-[120px]">{session?.user?.name || "Guest"}</span>
+                        <span className="text-gray-800 text-sm font-bold truncate max-w-[140px] pr-2">{session?.user?.name || "Guest"}</span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Center: Step Pills */}
+                    <div className="bg-white rounded-[12px] p-2 shadow-sm flex flex-wrap justify-center items-center gap-2 justify-self-center">
                         {[1, 2, 3, 4].map(num => (
                             <button
                                 key={num}
@@ -720,9 +718,9 @@ export default function PreferencesPage() {
                                     if (num === 3) router.push('/timetable');
                                     if (num === 4) router.push('/saved');
                                 }}
-                                className={`px-5 py-2 rounded-lg font-semibold text-sm cursor-pointer ${num === 1
-                                    ? 'bg-[#A0C4FF] text-black'
-                                    : 'bg-[#A0C4FF]/40 text-gray-700'
+                                className={`h-[38px] flex items-center justify-center rounded-[6px] font-bold text-sm cursor-pointer transition-colors border-none ${num === 1
+                                    ? 'bg-[#A0C4FF] text-black px-4 min-w-[38px]'
+                                    : 'bg-[#A0C4FF]/40 text-black min-w-[38px]'
                                     }`}
                             >
                                 {num === 1 ? '1. Preferences' : num}
@@ -730,24 +728,25 @@ export default function PreferencesPage() {
                         ))}
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Right: Next / Prev */}
+                    <div className="flex gap-3 justify-self-end ml-auto">
                         <button
                             onClick={() => {
                                 saveCurrentSelection();
                                 router.push('/');
                             }}
-                            className="px-8 py-2.5 border-2 border-gray-400 rounded-lg font-semibold text-sm hover:bg-gray-50 text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
+                            className="px-8 py-3 bg-[#f1eacb] hover:bg-[#E8DDB8] border-2 border-[#A0C4FF] rounded-[10px] font-bold text-sm text-black transition-all duration-200 cursor-pointer"
                         >
-                            Previous
+                            previous
                         </button>
                         <button
                             onClick={() => {
                                 saveCurrentSelection();
                                 router.push('/courses');
                             }}
-                            className="px-10 py-2.5 rounded-lg font-semibold text-sm bg-[#A0C4FF] hover:bg-[#90B4EF] text-black transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
+                            className="px-10 py-3 bg-[#A0C4FF] hover:bg-[#90B4EF] rounded-[10px] font-bold text-sm text-black transition-all duration-200 cursor-pointer"
                         >
-                            Next
+                            next
                         </button>
                     </div>
                 </div>
@@ -755,18 +754,20 @@ export default function PreferencesPage() {
 
             <style jsx>{`
                 .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
+                    width: 10px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.2);
-                    border-radius: 4px;
+                    background: rgba(255, 255, 255, 0.4);
+                    border-radius: 6px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(0, 0, 0, 0.2);
-                    border-radius: 4px;
+                    background: rgba(255, 255, 255, 0.9);
+                    border: 2px solid transparent;
+                    background-clip: padding-box;
+                    border-radius: 6px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(0, 0, 0, 0.3);
+                    background-color: #ffffff;
                 }
 
                 @keyframes lucidFadeUp {
