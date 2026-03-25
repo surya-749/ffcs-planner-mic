@@ -737,7 +737,7 @@ export default function PreferencesPage() {
                             }}
                             className="px-8 py-3 bg-[#f1eacb] hover:bg-[#E8DDB8] border-2 border-[#A0C4FF] rounded-[10px] font-bold text-sm text-black transition-all duration-200 cursor-pointer"
                         >
-                            previous
+                            Previous
                         </button>
                         <button
                             onClick={() => {
@@ -746,7 +746,7 @@ export default function PreferencesPage() {
                             }}
                             className="px-10 py-3 bg-[#A0C4FF] hover:bg-[#90B4EF] rounded-[10px] font-bold text-sm text-black transition-all duration-200 cursor-pointer"
                         >
-                            next
+                            Next
                         </button>
                     </div>
                 </div>

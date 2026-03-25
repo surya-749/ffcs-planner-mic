@@ -34,12 +34,19 @@ const deleteCookie = (name: string) => {
     document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
 };
 
-const SLOT_COLORS = ['#C8F7DC', '#E0D4F5', '#FFF3B0', '#FFD6E0', '#BDD7FF', '#B8F0E0'];
+type SelectedSlotState = {
+    slot: timetableDisplayData;
+    kind: 'theory' | 'lab';
+};
 
-function getSlotColor(code: string, allCodes: string[]) {
+const THEORY_SLOT_COLORS = ['#B8EDC0', '#A7D6B0', '#AFC9B4', '#BCEFC4', '#A8DDB7', '#B7D8C4'];
+const LAB_SLOT_COLORS = ['#F6F2DD', '#EBDD9F', '#DCCB8D', '#F0E4B8', '#E5D69E', '#D8C88A'];
+
+function getSlotColor(code: string, allCodes: string[], kind: 'theory' | 'lab' = 'theory') {
     const unique = [...new Set(allCodes)];
     const idx = unique.indexOf(code);
-    return SLOT_COLORS[idx % SLOT_COLORS.length];
+    const palette = kind === 'lab' ? LAB_SLOT_COLORS : THEORY_SLOT_COLORS;
+    return palette[idx % palette.length];
 }
 
 export default function TimetablePage() {
@@ -48,7 +55,7 @@ export default function TimetablePage() {
     const { timetableData, setTimetableData } = useTimetable();
 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedSlot, setSelectedSlot] = useState<timetableDisplayData | null>(null);
+    const [selectedSlot, setSelectedSlot] = useState<SelectedSlotState | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState('');
     const [clashMessage, setClashMessage] = useState<string | null>(null);
@@ -89,6 +96,9 @@ export default function TimetablePage() {
 
     const currentTT = timetableData?.[currentIndex] || [];
     const allCodes = currentTT.map(s => s.courseCode);
+    const selectedSlotAccent = selectedSlot
+        ? getSlotColor(selectedSlot.slot.courseCode, allCodes, selectedSlot.kind)
+        : '#d9c9f7';
 
     const showToast = useCallback((msg: string) => {
         setToast(msg);
@@ -409,9 +419,9 @@ export default function TimetablePage() {
                                                     <div
                                                         className={`flex-1 flex flex-col items-center justify-center min-h-[36px] py-[2px] transition-all cursor-pointer ${theoryCell ? 'z-10' : ''}`}
                                                         style={{
-                                                            backgroundColor: theoryCell ? getSlotColor(theoryCell.courseCode, allCodes) : '#e6f9ed',
+                                                            backgroundColor: theoryCell ? getSlotColor(theoryCell.courseCode, allCodes, 'theory') : '#dffbee',
                                                         }}
-                                                        onClick={() => theoryCell && setSelectedSlot(theoryCell)}
+                                                        onClick={() => theoryCell && setSelectedSlot({ slot: theoryCell, kind: 'theory' })}
                                                     >
                                                         {theoryCell ? (
                                                             <>
@@ -430,9 +440,9 @@ export default function TimetablePage() {
                                                     <div
                                                         className={`flex-1 flex flex-col items-center justify-center min-h-[36px] py-[2px] transition-all cursor-pointer ${labCell ? 'z-10' : ''}`}
                                                         style={{
-                                                            backgroundColor: labCell ? getSlotColor(labCell.courseCode, allCodes) : '#fff6e0',
+                                                            backgroundColor: labCell ? getSlotColor(labCell.courseCode, allCodes, 'lab') : '#f6f2dd',
                                                         }}
-                                                        onClick={() => labCell && setSelectedSlot(labCell)}
+                                                        onClick={() => labCell && setSelectedSlot({ slot: labCell, kind: 'lab' })}
                                                     >
                                                         {labCell ? (
                                                             <>
@@ -577,43 +587,45 @@ export default function TimetablePage() {
             {selectedSlot && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-[4px]" onClick={() => setSelectedSlot(null)}>
                     <div
-                        className="bg-white rounded-[40px] shadow-2xl p-12 w-[90%] max-w-[500px] relative animate-[scaleIn_0.2s_ease] border-4"
-                        style={{ borderColor: getSlotColor(selectedSlot.courseCode, allCodes) }}
+                        className="bg-white rounded-[40px] shadow-[0_24px_80px_rgba(0,0,0,0.18)] p-10 sm:p-12 w-[92%] max-w-[700px] relative animate-[scaleIn_0.2s_ease] border-[5px]"
+                        style={{ borderColor: selectedSlotAccent, boxShadow: `0 0 0 2px ${selectedSlotAccent}20, 0 24px 80px rgba(0,0,0,0.18)` }}
                         onClick={e => e.stopPropagation()}
                     >
                         <button
                             onClick={() => setSelectedSlot(null)}
-                            className="absolute top-8 right-8 w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-black"
+                            className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-black"
                         >
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
                         </button>
 
-                        <div className="mb-10">
-                            <span className="px-5 py-2 rounded-full text-[12px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest mb-4 inline-block">Course Details</span>
-                            <h2 className="text-[32px] font-black text-black leading-tight mt-2">{selectedSlot.courseCode}</h2>
-                            <p className="text-[18px] font-bold text-gray-600 mt-2">{selectedSlot.courseName}</p>
+                        <div className="mb-8">
+                            <span className="px-5 py-2 rounded-full text-[12px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest mb-4 inline-block">
+                                {selectedSlot.kind === 'lab' ? 'Lab Details' : 'Course Details'}
+                            </span>
+                            <h2 className="text-[32px] sm:text-[36px] font-black text-black leading-tight mt-2">{selectedSlot.slot.courseCode}</h2>
+                            <p className="text-[18px] sm:text-[20px] font-bold text-slate-600 mt-2">{selectedSlot.slot.courseName}</p>
                         </div>
 
-                        <div className="space-y-8">
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">👨‍🏫</div>
+                        <div className="space-y-6">
+                            <div className="flex gap-4 items-start">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[22px] shrink-0" style={{ backgroundColor: `${selectedSlotAccent}33` }}>👨‍🏫</div>
                                 <div>
                                     <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Faculty</p>
-                                    <p className="text-[18px] font-bold text-black">{selectedSlot.facultyName}</p>
+                                    <p className="text-[18px] sm:text-[20px] font-bold text-black">{selectedSlot.slot.facultyName}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">🕒</div>
+                            <div className="flex gap-4 items-start">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[22px] shrink-0" style={{ backgroundColor: `${selectedSlotAccent}33` }}>🕒</div>
                                 <div>
                                     <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Slot</p>
-                                    <p className="text-[18px] font-bold text-black">{selectedSlot.slotName}</p>
+                                    <p className="text-[18px] sm:text-[20px] font-bold text-black">{selectedSlot.slot.slotName}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[20px]">📍</div>
+                            <div className="flex gap-4 items-start">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[22px] shrink-0" style={{ backgroundColor: `${selectedSlotAccent}33` }}>📍</div>
                                 <div>
                                     <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest mb-1">Classroom</p>
-                                    <p className="text-[18px] font-bold text-black">Main Campus - TBD</p>
+                                    <p className="text-[18px] sm:text-[20px] font-bold text-black">Main Campus - TBD</p>
                                 </div>
                             </div>
                         </div>
